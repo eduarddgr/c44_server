@@ -1,0 +1,1051 @@
+<html>
+
+<head>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="lib/mapper.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Playwrite+DE+SAS:wght@100..400&family=Playwrite+NO:wght@100..400&family=Playwrite+NZ+Guides&display=swap" rel="stylesheet">
+
+<style>
+
+.googleFont {
+        font-family: "Playwrite NO", cursive;
+  font-optical-sizing: auto;
+  font-weight: <weight>;
+  font-style: normal;
+}
+
+</style>
+
+</head>
+
+<body style="background-color:CornflowerBlue;">
+
+<center>
+
+<div id="background">
+  <div class="wrapper">
+    <nav></nav>
+    <main><div id="root"></div></main>
+    <footer></footer>
+  </div>
+</div>
+
+</center>
+
+</body>
+<!-- This setup is not suitable for production. -->
+<!-- Only use it in development! -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script async src="https://ga.jspm.io/npm:es-module-shims@1.7.0/dist/es-module-shims.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@latest",
+	"react-dom": "https://esm.sh/react-dom@latest",
+	"react-dom/client": "https://esm.sh/react-dom@latest/client",
+	"react/jsx-runtime": "https://esm.sh/react@latest/jsx-runtime",
+	"@mui/material": "https://esm.sh/@mui/material@latest?external=react,react-dom"
+  }
+}
+</script>
+<script type="text/babel" data-type="module">
+import React, { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { useState, useEffect } from 'react';
+
+import {
+        Button,
+        Dialog,
+        DialogActions,
+        DialogContent,
+        DialogContentText,
+        DialogTitle,
+      } from '@mui/material';
+
+var hash = window.location.href.split("=")[1];
+
+var gameHash;
+
+var lastMovesArray = [];
+
+var myGlobalColor;
+
+function ColorDialog({setDirty, dirty, postTurn}) {
+
+  const handleGreen = () => {
+    postTurn(0);
+    setDirty(false);
+  };
+
+  const handleBlue = () => {
+    postTurn(1);
+    setDirty(false);
+  };
+
+  const handleRed = () => {
+    postTurn(2);
+    setDirty(false);
+  };
+
+  const handleYellow = () => {
+    postTurn(3);
+    setDirty(false);
+  };
+
+  const handleClose = () => {
+    setDirty(false);
+  };
+
+  /*
+			<br/>
+			<input type="checkbox" id="iterate" name="iterate" value="true"/>
+			<label for="iterate"> Iterate over possible moves</label><br/>
+  */
+
+  return (
+    <React.Fragment>
+
+    <Dialog
+        open={dirty}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Choose the next color :)
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+			This board has gotten a rewrite but it's not clear which color is next?<br/>
+			<br/>
+			Can you choose which color that needs to move now?<br/>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleGreen}>Green</Button>
+          <Button onClick={handleBlue}>Blue</Button>
+          <Button onClick={handleRed}>Red</Button>
+          <Button onClick={handleYellow}>Yellow</Button>
+        </DialogActions>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+
+function MateDialog({setOpenMate, openMate}) {
+
+	const [openDominate, setOpenDominate] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpenMate(true);
+  };
+
+  const handleClose = () => {
+    setOpenMate(false);
+  };
+
+  const handleOpenDominate = () => {
+    setOpenDominate(true);
+  };
+
+  const handleCloseDominate = () => {
+    setOpenDominate(false);
+  };
+
+  const handleCloseBoth = () => {
+
+	fetch('http://localhost:8080/react/kamikaze/'
+				+ gameHash + "/" + hash);
+
+	window.location.reload();
+  };
+
+  return (
+    <React.Fragment>
+
+    <Dialog
+        open={openMate}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Check... Mate!!!
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Where regular chess ends -> C44 goes beyond!!!<br/>
+            <br/>
+            You can:<br/>
+            - claim this victory:<br/>
+            (You'll get 1 point (and all the glory)!)<br/>
+            - Or you can choose to try to dominate:<br/>
+            (so try to mate the remaining opponent)<br/>
+            <br/>
+            But, be aware!!!<br/>
+            Trying to dominate is not without peril!:<br/>
+            If the opponent mates you (or your ally) you can lose your point,<br/>
+            however:<br/>
+            if you can mate the remaining opponent there is a subtile reward:<br/>
+            You'll get .3 additional points from your victory...<br/>
+            <br/>
+            Then again: if your opponent mates your ally<br/>
+            and you can still mate him/her you get 1.47 points...
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>
+            Claim victory
+          </Button>
+          <Button onClick={handleOpenDominate}>Of course I want to dominate!</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDominate}
+        onClose={handleCloseDominate}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Before you proceed...
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+			So you want to domitate?<br/>
+			<br/>
+			There are a couple of things you might want to consider:<br/>
+			<br/>
+			1) Just before death the mated player will execute<br/>
+			one last "kamikaze-move":<br/>
+			(s)he can make any (legal) move with any piece...<br/>
+			<br/>
+			2) You (or your ally) are obliged to capture the king, any way you can,<br/>
+			and those are the only legal moves your turn (or the turn of your ally)...<br/>
+			(after the kamikaze-move of the mated player).
+			<br/>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDominate}>
+            No, wait!
+          </Button>
+          <Button onClick={handleCloseBoth}>Let's boogy :)</Button>
+        </DialogActions>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+
+function DoneDialog({setOpenDone, openDone}) {
+
+	const getAway = () => {
+		window.location.assign("all.html");
+  };
+
+  return (
+    <React.Fragment>
+
+    <Dialog
+        open={openDone}
+        onClose={getAway}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Great news everyone!: The Green-Red Alliance has won!!!!
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+			That's 1.3 points for the good guys,<br/>
+			<br/>
+			a glorious victory indeed!!!
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={getAway}>
+            Yeah!
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+
+function parseMove(move){
+
+	lastMovesArray.push(move.from);
+	lastMovesArray.push(move.to);
+}
+
+function parseLastMovez(movez){
+
+	JSON.parse(movez).forEach(parseMove);
+}
+
+function lookUpLastMove(i, j){
+
+	for (let k = 0; k < lastMovesArray.length; k++) {
+		
+		if(lastMovesArray[k] !== null
+			&& mapMoveColorToX(myGlobalColor, lastMovesArray[k].x, lastMovesArray[k].y) == i 
+			&& mapMoveColorToY(myGlobalColor, lastMovesArray[k].x, lastMovesArray[k].y) == j){
+
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+function Piece({ i, j, piece, src, background, showMovez, blank }) {
+
+	var id = "cell_" + i + "_" + j;
+	
+	var movez = piece.movez;
+
+	var color = piece.color;
+	
+	var md5 = piece.md5;
+	
+	var pinned = piece.pinned;
+	
+	function debug(moveFromPiece){
+
+		alert("moveFromPiece.from.x:" + moveFromPiece.from.x + ", moveFromPiece.from.y:" + moveFromPiece.from.y 
+		+ " moveFromPiece.to.x:" + moveFromPiece.to.x + ", moveFromPiece.to.y:" + moveFromPiece.to.y);
+	}
+	
+	function escalateMovez(){
+	
+		showMovez(movez, md5, pinned);
+	}
+	
+	const black = {
+		border: 'solid black', 
+	};
+
+	const normal = {
+		border: 'solid Chocolate', 
+	};
+
+	const empty = {
+		border: 'solid white', 
+	};
+
+	const corner = {
+		border: 'solid CornflowerBlue',
+	};
+
+	var isLastMove = lookUpLastMove(i, j);
+
+	if( i < 2 && j < 2 || i < 2 && j > 9 || i > 9 && j < 2 || i > 9 && j > 9){
+
+		return (
+			<>
+				<img id={id} src={background} width="30" height="30" style={corner} />
+			</>
+		);
+
+	} else if(isLastMove){
+
+		return (
+			<a onClick={escalateMovez}>
+				<img id={id} src={background} width="30" height="30" style={black} />
+				<img class="data" src={src} width="30" height="35" />
+			</a>
+		);
+	
+	} else if(blank === "blank"){
+	
+		return (
+			<a onClick={escalateMovez}>
+				<img id={id} src={background} width="30" height="30" style={empty} />
+				<img class="data" src={src} width="30" height="35" />
+			</a>
+		);
+
+	} else {
+	
+		return (
+			<a onClick={escalateMovez}>
+				<img id={id} src={background} width="30" height="30" style={normal} />
+				<img class="data" src={src} width="30" height="35" />
+			</a>
+		);
+	}
+}
+
+function debugPiece(data){
+
+	if(typeof data !== 'undefined' && data !== null
+			&& typeof data.guiPiece !== 'undefined'
+			&& data.guiPiece !== null){
+
+		return mapToPieceAndColor(data.guiPiece.identifier, data.guiPiece.color);
+	}
+
+	return "empty";
+}
+
+function Square({ i, j, pieces, color, showMovez, md5, sendMd5 }) {
+
+	var src = "./imgz/Naamloos.png";
+
+	var piece = "";
+
+	function decideMd5(){
+
+		if(md5 !== "empty"){
+		
+			sendMd5(md5);
+		}
+	}
+
+	if(pieces !== null && typeof pieces !== 'undefined' 
+		&& typeof pieces[(i * 12) + j] !== 'undefined' && pieces[(i * 12) + j] !== null
+			&& typeof pieces[(i * 12) + j].guiPiece !== 'undefined'
+			&& pieces[(i * 12) + j].guiPiece !== null){
+		
+		src = mapToPieceAndColor(pieces[(i * 12) + j].guiPiece.identifier, pieces[(i * 12) + j].guiPiece.color);
+		
+		piece = pieces[(i * 12) + j].guiPiece;
+	}
+
+	if((i<2 && j<2)
+		|| (i>9 && j<2)
+		|| (i<2 && j>9)
+		|| (i>9 && j>9)){
+
+		return (
+			<div class="place" onClick={decideMd5} >
+				<Piece i={i} j={j} piece={piece} showMovez={showMovez} src={src} background="imgz/blank.png" blank="blank" />
+			</div>
+		);
+	}
+		
+	if(i%2==j%2){
+	
+		if(color != ""){
+		
+			var background = "imgz/white" + color + ".png";
+
+			return (
+				<div class="place" onClick={decideMd5} >
+					<Piece i={i} j={j} piece={piece} showMovez={showMovez} src={src}  blank="not_blank"
+						background={background} />
+				</div>
+			);
+
+		} else {
+		
+			return (
+				<div class="place" onClick={decideMd5} >
+					<Piece i={i} j={j} piece={piece} showMovez={showMovez} src={src} blank="not_blank"
+						background="imgz/white.png" />
+				</div>
+			);
+		}
+
+
+	} else {
+
+		if(color != ""){
+		
+			var background = "imgz/black" + color + ".png";
+
+			return (
+				<div class="place" onClick={decideMd5} >
+					<Piece i={i} j={j} piece={piece} showMovez={showMovez} src={src} blank="not_blank"
+						background={background} />
+				</div>
+			);
+
+		} else {
+		
+			return (
+				<div class="place" onClick={decideMd5} >
+					<Piece i={i} j={j} piece={piece} showMovez={showMovez} src={src} blank="not_blank"
+						background="imgz/black.png" />
+				</div>
+			);
+		}
+	}
+}
+
+export default function Board({ pieces, places, updatePlaces, currentColor, 
+	setMovez, oldMovez, setOldMovez, setcurrentPiece, sendMd5, myColor }) {
+
+	const rows = [];
+
+	function hideMove(move) {
+	
+		console.log("hideMove");
+		
+		places[mapMoveColorToX(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)]
+			[mapMoveColorToY(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)].color 
+				= mapColorToBackground(-1);
+
+		places[mapMoveColorToX(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)]
+			[mapMoveColorToY(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)].md5 = 
+			"empty";
+
+	}
+	
+	function showMove(move){
+
+/*
+		alert("from: (" + mapColorToX(mapColorNameToColorInt(currentColor), move.from.x, move.from.y) 
+			+ "," + mapColorToY(mapColorNameToColorInt(currentColor), move.from.x, move.from.y) 
+			+ ") to: (" + mapColorToX(mapColorNameToColorInt(currentColor), move.to.x, move.to.y) 
+			+ "," + mapColorToY(mapColorNameToColorInt(currentColor), move.to.x, move.to.y) + ")");
+*/
+			
+			places[mapMoveColorToX(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)]
+				[mapMoveColorToY(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)].color = 
+				mapColorToBackground(parseInt(mapColorNameToColorInt(currentColor)));
+
+			places[mapMoveColorToX(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)]
+				[mapMoveColorToY(mapColorNameToColorInt(currentColor), move.to.x, move.to.y)].md5 = 
+				move.to.md5;
+	}
+
+	function showMovez(movez, md5, pinned){
+	
+		if(myColor !== mapColorNameToColorInt(currentColor)){
+		
+			return;
+		}
+		
+		if(pinned){
+		
+			alert("I can't move\n(I'm pinned...)\n(If I'd move you would be check...)");
+		}
+
+		setMovez(movez);
+	
+		if(oldMovez !== null){
+		
+			oldMovez.forEach(hideMove);
+		}
+		
+		if(typeof movez !== 'undefined'){
+		
+			movez.forEach(showMove);
+			
+			updatePlaces(places);
+			
+			setOldMovez(movez);
+			
+			setcurrentPiece(md5);
+		}
+	}
+
+	if(places === null){
+	
+		places = [];
+	
+		for (let i = 0; i < 12; i++) {
+		
+			places[i] = [];
+			
+			for (let j = 0; j < 12; j++) {
+				places[i][j] = 
+				{ 
+					"color" : "",
+					"md5" 	: "empty"
+				};
+			}
+		}
+	}
+
+	for (let i = 0; i < 12; i++) {
+		for (let j = 0; j < 12; j++) {
+			rows.push(<Square i={i} j={j} pieces={pieces} color={places[i][j].color} 
+				showMovez={showMovez} md5={places[i][j].md5} sendMd5={sendMd5} />);
+		}
+		rows.push(<br/>);
+	}
+	
+	return <tbody>{rows}</tbody>;
+}
+
+function Referee({ currentName }) {
+
+	return <div id="referee" class="googleFont">
+		I am the almighty Referee!!!<br/>
+		<br/>
+		The current player is:<br/>
+		<br/>
+		{currentName}
+		</div>;
+}
+
+function RobotOutput({ robotOutput }) {
+
+	return <div id="robotOutput" style={{ whiteSpace: 'pre-line' }} class="googleFont">
+				{robotOutput}
+				</div>;
+}
+
+function BackButton({ rollBack, doContinue, debug }) {
+
+	return <div id="backButton">
+		<button type="button" onClick={debug}>Download Json</button><br/><br/>
+		</div>;
+}
+
+let App = function Game() {
+
+	const [pieces, setPieces] = useState(Array(12 * 12).fill(null));
+
+	const [currentPiece, setcurrentPiece] = useState(null);
+
+	const [places, setPlaces] = useState(null);
+
+	const [currentName, setCurrentName] = useState("");
+
+	const [currentColor, setCurrentColor] = useState(null);
+
+	const [movez, setMovez] = useState(null);
+
+	const [oldMovez, setOldMovez] = useState(null);
+
+	const [myReactColor, setMyColor] = useState(null);
+
+	const [robotOutput, setRobotOutput] = useState(null);
+
+	var interval = null;
+
+	var myColor;
+
+	var oldPlayer = null;
+
+	var checkMessageShown = false;
+
+	var turnMessageShown = false;
+
+	const [openMate, setOpenMate] = React.useState(false);
+
+	const [dirty, setDirty] = React.useState(false);
+
+	const [openDone, setOpenDone] = React.useState(false);
+
+	function sendMd5(md5){
+
+		if(currentPiece !== null){
+			fetch('http://localhost:8080/react/play/'
+						+ gameHash + "/" + hash + "/" + currentPiece + "/" + md5)
+			.then(response => response.json())
+			.then(data => parseArray(data));
+
+			setPlaces(null);
+			setcurrentPiece(null);
+
+			window.location.reload();
+		}
+	}
+
+	function postTurn(turn){
+
+	fetch('http://localhost:8080/react/postTurn/'
+						+ gameHash + "/" + turn);
+
+			window.location.reload();
+	}
+
+	function parseArray(data){
+
+		const newPieces = [];
+
+		for (let i = 0; i < data.length; i++) {
+
+			for (let j = 0; j < data[0].length; j++) {
+
+				newPieces[(i * 12) + j] = data[mapColorToX(myColor, i, j)][mapColorToY(myColor, i, j)];
+
+				console.log("i:" + i + ", j:" + j + " mpctx:" + mapColorToX(myColor, i, j) + " mpcty:" + mapColorToY(myColor, i, j) + " data: " + debugPiece(newPieces[(i * 12) + j]));
+			}
+		}
+
+		setPieces(newPieces);
+	}
+
+	function parseCurrentPlayer(data){
+
+		if(data === "true"){
+
+			if(interval !== null){
+
+				window.location.reload();
+			}
+
+		} else {
+
+			if(interval === null){
+
+				interval = setInterval(function() {
+
+					fetch("http://localhost:8080/react/getIsCurrentPlayer/" + window.location.href.split("=")[1])
+						.then(response => response.text())
+						.then(data => parseCurrentPlayer(data));
+
+					fetch("http://localhost:8080/react/getCurrentPlayerString/" + window.location.href.split("=")[1])
+						.then(response => response.text())
+						.then(data => setName(data));
+
+				}, 3000);
+			}
+		}
+	}
+
+	function persistGameHash(data){
+
+		gameHash = data;
+	}
+
+	function setName(name){
+
+		setCurrentName(name);
+
+		if(oldPlayer === null){
+
+			oldPlayer = name;
+
+		} else if(oldPlayer !== name){
+
+			window.location.reload();
+		}
+	}
+
+	function parseColor(data){
+
+		setMyColor(data);
+
+		myColor = data;
+		myGlobalColor = data;
+	}
+
+	function assignCurrentColor(data){
+
+		if(mapColorNameToColorInt(data) === myGlobalColor && !turnMessageShown) {
+
+			alert("It's your turn...");
+
+			turnMessageShown = true;
+		}
+
+		setCurrentColor(data);
+	}
+
+	function updatePlaces(places){
+
+		setPlaces(places);
+	}
+
+	function setLastMovez(movez){
+
+		parseLastMovez(movez);
+	}
+
+	function setCheck(movez){
+
+		if(movez === "true" && !checkMessageShown){
+
+			alert("You are in check...");
+
+			checkMessageShown = true;
+		}
+	}
+
+	function rollBack(){
+
+		fetch('http://localhost:8080/react/rollBack/'
+					+ gameHash)
+
+		window.location.reload();
+	}
+
+	function refresh() {
+
+		getRobotOutput();
+
+		setTimeout(refresh, 1000);
+	}
+
+	function somethingElse() {
+
+		console.log("refresh");
+	}
+
+	refresh();
+
+	function getRobotOutput() {
+		fetch("http://localhost:8080/react/robotOutput/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => {
+			console.log(data);
+			return data;
+		})
+		.then(data => setRobotOutput(data));
+	}
+
+	function translateDirty(data){
+
+		if(data === 'true'){
+
+			setDirty(true);
+
+		} else {
+
+			setDirty(false);
+		}
+	}
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getMyColor/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseColor(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getGame/" + window.location.href.split("=")[1])
+		.then(response => response.json())
+		.then(data => parseArray(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getGameHash/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => persistGameHash(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getIsCurrentPlayer/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseCurrentPlayer(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getCurrentPlayerString/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => setName(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getCurrentColor/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => assignCurrentColor(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/lastMove/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => setLastMovez(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/isCheck/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => setCheck(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/robotOutput/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => {
+			console.log(data);
+			return data;
+		})
+		.then(data => setRobotOutput(data))
+	})
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/mate/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => updateOpen(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/dirty/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => translateDirty(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/done/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => updateDone(data))
+	},[])
+
+
+	function doContinue(){
+
+		alert('continue');
+	}
+
+	function download(data, filename, type) {
+		var a = document.createElement("a"),
+			file = new Blob([data], {type: type});
+		if (window.navigator.msSaveOrOpenBlob) // IE10+
+			window.navigator.msSaveOrOpenBlob(file, filename);
+		else { // Others
+			var url = URL.createObjectURL(file);
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			setTimeout(function() {
+					document.body.removeChild(a);
+					window.URL.revokeObjectURL(url);
+				}, 0);
+			}
+	}
+
+	function debug(){
+
+		//download("debug", "debug.json", "application/json");
+
+		fetch("http://localhost:8080/react/getGame/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => download(data, "debug.json", "application/json"));
+
+		}
+
+	function updateOpen(data){
+
+		if(data === "false") {
+
+			setOpenMate(false);
+
+		} else {
+
+			setOpenMate(true);
+		}
+	}
+
+	function updateDone(data){
+
+		if(data === "false") {
+
+			setOpenDone(false);
+
+		} else {
+
+			setOpenDone(true);
+		}
+	}
+
+	return (
+		<div>
+			<Board pieces={pieces} 
+				places={places} updatePlaces={updatePlaces} currentColor={currentColor} 
+				setMovez={setMovez} oldMovez={oldMovez} setOldMovez={setOldMovez} 
+				setcurrentPiece={setcurrentPiece} sendMd5={sendMd5} myColor={myReactColor}
+				/>
+				
+			<Referee currentName={currentName} />
+
+			<RobotOutput robotOutput={robotOutput} />
+
+			<BackButton rollBack={rollBack} doContinue={doContinue} debug={debug} />
+
+			<MateDialog setOpenMate={setOpenMate} openMate={openMate} />
+
+			<DoneDialog setOpenDone={setOpenDone} openDone={openDone} />
+
+			<ColorDialog setDirty={setDirty} dirty={dirty} postTurn={postTurn} />
+
+			</div>
+	);
+}	
+
+const root = createRoot(document.getElementById('root'));
+
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+</script>
+
+<style>
+
+.wrapper {
+  width: 90vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#background {
+  width: 100%;
+  height: 100%;
+}
+
+nav {
+  flex: 1;
+}
+
+main {
+  flex: 2;
+}
+
+.place {
+	position: relative;
+	display: inline;
+}
+
+.place .data {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	z-index: 1;
+}
+
+.place .count{
+	position: absolute;
+	left: 0;
+	z-index: 2;
+	opacity: 0.5;
+}
+
+#referee {
+
+	position: absolute;
+	top: 10px;
+	left: 10px;
+}
+
+#robotOutput {
+
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	margin: 50px;
+}
+
+#backButton {
+
+	position: absolute;
+	bottom: 10px;
+	right: 10px;
+}
+
+
+</style>
+
+</html>

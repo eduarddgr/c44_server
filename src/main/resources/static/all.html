@@ -1,0 +1,122 @@
+<html>
+
+<head>
+
+<style>
+
+#center {
+	margin: auto;
+	width: 50%;
+	text-align: center;
+	padding: 200px 0;
+}
+
+h1 {
+	border-style: hidden hidden solid solid;
+	padding: 20px;
+}
+
+#cookie{
+	position: absolute;
+	left: 10px;
+	bottom: 10px;
+}
+
+a:link.here, a:visited.here {
+	text-decoration: underline;
+}
+
+</style>
+
+<script>
+
+function showModal(){
+	var myModal = new bootstrap.Modal(document.getElementById("exampleModal"), {});
+	myModal.show();
+}	
+
+function toggleCookies(){
+	
+	if($('#cookieInput').prop('checked')){
+		$('#login').prop('disabled', false);
+	} else {
+		$('#login').prop('disabled', true);
+	}
+}
+
+function getCookie(cname) {
+  let name = cname + "=";
+  let ca = document.cookie.split(';');
+  for(let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
+function consentCookies(){
+
+	$('#cookieInput').prop('checked', true);
+	$('#login').prop('disabled', false);
+	$('#exampleModal').modal('hide');
+}
+
+<?
+/*
+if(isset($_COOKIE["AcceptedCookie"])){
+?>
+$( document ).ready(function() {
+	consentCookies();
+});
+<?
+}
+*/
+?>
+
+$( document ).ready(function() {
+	if(getCookie("JavaScriptCookie") == "yes"){
+		consentCookies();
+	}
+});
+
+</script>
+
+</head>
+<body>
+<form action="loginDiff.php" method='post' id="form">
+<div id="center">
+<h1>Please log in:</h1>
+<br/>
+<br/>
+Email: <input type='text' size="50" class="left" id="mail" name="mail"/>&nbsp;&nbsp;<button id="login" class="btn btn-primary right" disabled="disabled" type="submit">Login</button>
+
+<br/><br/><br/><br/>
+
+<h1>Don't have an account?</h1>
+
+<br/><br/>
+
+<h2><span style="color: white">For the present moment you<br/>- unfortunately -<br/>can't create an account yet :(<br/>
+	If you want to stay in the loop please <a href="#">subscribe to the LoopList</a>.</span></h2>
+
+</div>
+
+<?
+include_once("cookie.php");
+?>
+
+<div id="cookie">
+	<img src="imgz/cookie.png" width="300" height="150"><br/>
+	<input type="checkbox" id="cookieInput" name="vehicle1" value="Bike" onclick="toggleCookies()">
+	<label for="vehicle1"> Agree with the use of cookies on this site; you can read more <a href="#" class="here" onclick="showModal();">here</a>.</label><br>
+</div>
+
+</form>
+</body>
+</html>
+

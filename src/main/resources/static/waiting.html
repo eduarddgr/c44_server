@@ -1,0 +1,169 @@
+<html>
+
+<head>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<style>
+
+.wrapper {
+  width: 90vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#background {
+  width: 100%;
+  height: 100%;
+}
+
+a:visited {
+  color: black;
+  text-decoration: none;
+}
+
+a:link {
+  color: black;
+  text-decoration: none;
+}
+
+a:hover {
+  color: green;
+  text-decoration: none;
+}
+
+a:active {
+  color: white;
+  text-decoration: none;
+}
+
+</style>
+
+<script>
+
+var ourBotOnline = false;
+var yourBotOnline = false;
+
+function showOur(){
+
+  $("#our").slideToggle( "slow", function() {});
+
+  checkOurBotOnline();
+}
+
+function showYours(){
+
+  $("#your").slideToggle( "slow", function() {});
+
+  checkYourBotOnline();
+}
+
+$( document ).ready(function() {
+    if(window.location.href.split("=")[1] === "yoo") {
+
+        $("#title").html("You and our bot against our bots it is...");
+
+        showOur();
+
+        } else if(window.location.href.split("=")[1] === "yyo") {
+
+        $("#title").html("You and your bot against our bots it is...");
+
+                showOur();
+        showYours();
+
+        } else if(window.location.href.split("=")[1] === "yoy") {
+
+        $("#title").html("You and our bot against your bots it is...");
+
+                showOur();
+        showYours();
+
+        } else if(window.location.href.split("=")[1] === "yo") {
+
+        $("#title").html("Your bots against our bots it is...");
+
+                showOur();
+        showYours();
+
+        }
+});
+
+function checkBoogy(){
+
+  if(ourBotOnline && yourBotOnline) {
+
+    $("#boogy").show( "slow", function() {});
+  }
+}
+
+function checkOurBotOnline(){
+
+  $.get( "http://localhost:7778/", function( data ) {
+
+      if(data === "online"){
+
+        $("#our").html("Our bot is online :)<br/><br/>");
+
+        ourBotOnline = true;
+
+        checkBoogy();
+    }
+  });
+
+  setTimeout(function(){
+
+      checkOurBotOnline();
+
+      }, 2000);
+}
+
+function checkYourBotOnline(){
+
+  $.get( "http://localhost:7779/", function( data ) {
+
+      if(data === "online"){
+
+        $("#your").html("Your bot is online :)<br/><br/>");
+
+        yourBotOnline = true;
+
+        checkBoogy();
+      }
+  });
+
+    setTimeout(function(){
+
+      checkYourBotOnline();
+
+    }, 2000);
+}
+</script>
+
+</head>
+
+<body>
+
+<center>
+
+<h2 id="title"></h2>
+
+<div id="background">
+  <div class="wrapper">
+    <div>Waiting for bots to come online...</div><br/>
+    <br/>
+    <br/>
+    <br/>
+    <div id="our" style="display: none;">Our bot is not (yet) online...<br/>
+    <br/></div>
+    <div id="your" style="display: none;">Your bot is not (yet) online...<br/>
+    <br/></div>
+    <div id="boogy" style="display: none;"><a href="http://localhost:8080/c44/c44.html?id=bbad6bd689f97ce9e85f7815cdd47fa8">Let's boogy B-)</a><br/>
+    <br/></div>
+  </div>
+</div>
+
+</center>
+</body>
+</html>
