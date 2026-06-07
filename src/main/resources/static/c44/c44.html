@@ -18,6 +18,10 @@
   font-style: normal;
 }
 
+.css-fix {
+  white-space: pre-wrap; /* or pre-line */
+}
+
 </style>
 
 </head>
@@ -73,28 +77,28 @@ var gameHash;
 
 var lastMovesArray = [];
 
-var myGlobalColor;
+var myGlobalColor, allyGlobalColor;
 
 function ColorDialog({setDirty, dirty, postTurn}) {
 
   const handleGreen = () => {
     postTurn(0);
-    setDirty(false);
+    window.location.reload();
   };
 
   const handleBlue = () => {
     postTurn(1);
-    setDirty(false);
+    window.location.reload();
   };
 
   const handleRed = () => {
     postTurn(2);
-    setDirty(false);
+    window.location.reload();
   };
 
   const handleYellow = () => {
     postTurn(3);
-    setDirty(false);
+    window.location.reload();
   };
 
   const handleClose = () => {
@@ -139,7 +143,7 @@ function ColorDialog({setDirty, dirty, postTurn}) {
   );
 }
 
-function MateDialog({setOpenMate, openMate}) {
+function MateDialog({setOpenMate, openMate, currentColor}) {
 
 	const [openDominate, setOpenDominate] = React.useState(false);
 
@@ -149,6 +153,8 @@ function MateDialog({setOpenMate, openMate}) {
 
   const handleClose = () => {
     setOpenMate(false);
+
+    window.location.assign("http://localhost:8080/c44/all.html");
   };
 
   const handleOpenDominate = () => {
@@ -167,6 +173,60 @@ function MateDialog({setOpenMate, openMate}) {
 	window.location.reload();
   };
 
+  var text = "unknown";
+
+  var stop = "stop";
+
+  var goOn = "goOn";
+
+  if(currentColor !== null && mapColorNameToColorInt(currentColor) === allyGlobalColor) {
+
+	text = "Ow, it seems like your ally is surrounded :(\n\n";
+         text += "do you want to continue game?\n\n";
+         text += "Or do you want to go proudly to other battles instead?";
+
+         stop = "Goodbye!";
+
+         goOn = "I'll avenge him!!!";
+
+         } else if(currentColor !== null && mapColorNameToColorInt(currentColor) === myGlobalColor) {
+
+	text = "Ow, it seems like you don't have any moves anymore :('\n\n";
+         text += "do you want your ally to attempt to avenge?\n\n";
+         text += "Or does (this game) end for you now?";
+
+         stop = "Goodbye!";
+
+         goOn = "I trust my ally!";
+
+
+
+  } else {
+
+  text = "Where regular chess ends -> C44 goes beyond!!!<br/>";
+            text += "<br/>";
+            text += "You can:<br/>";
+            text += "- claim this victory:<br/>";
+            text += "(You'll get 1 point (and all the glory)!)<br/>";
+            text += "- Or you can choose to try to dominate:<br/>";
+            text += "(so try to mate the remaining opponent)<br/>";
+            text += "<br/>";
+            text += "But, be aware!!!<br/>";
+            text += "Trying to dominate is not without peril!:<br/>";
+            text += "If the opponent mates you (or your ally) you can lose your point,<br/>";
+            text += "however:<br/>";
+            text += "if you can mate the remaining opponent there is a subtile reward:<br/>";
+            text += "You'll get .3 additional points from your victory...<br/>";
+            text += "<br/>";
+            text += "Then again: if your opponent mates your ally<br/>";
+            text += "and you can still mate him/her you get 1.47 points...";
+
+                     stop = "Claim victory";
+
+         goOn = "Of course I want to dominate!";
+
+		}
+
   return (
     <React.Fragment>
 
@@ -181,31 +241,13 @@ function MateDialog({setOpenMate, openMate}) {
           Check... Mate!!!
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Where regular chess ends -> C44 goes beyond!!!<br/>
-            <br/>
-            You can:<br/>
-            - claim this victory:<br/>
-            (You'll get 1 point (and all the glory)!)<br/>
-            - Or you can choose to try to dominate:<br/>
-            (so try to mate the remaining opponent)<br/>
-            <br/>
-            But, be aware!!!<br/>
-            Trying to dominate is not without peril!:<br/>
-            If the opponent mates you (or your ally) you can lose your point,<br/>
-            however:<br/>
-            if you can mate the remaining opponent there is a subtile reward:<br/>
-            You'll get .3 additional points from your victory...<br/>
-            <br/>
-            Then again: if your opponent mates your ally<br/>
-            and you can still mate him/her you get 1.47 points...
+          <DialogContentText id="alert-dialog-description" class="css-fix">
+			 {text}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>
-            Claim victory
-          </Button>
-          <Button onClick={handleOpenDominate}>Of course I want to dominate!</Button>
+          <Button onClick={handleClose}>{stop}</Button>
+          <Button onClick={handleOpenDominate}>{goOn}</Button>
         </DialogActions>
       </Dialog>
 
@@ -625,11 +667,13 @@ let App = function Game() {
 
 	const [myReactColor, setMyColor] = useState(null);
 
+	const [allyReactColor, setAllyColor] = useState(null);
+
 	const [robotOutput, setRobotOutput] = useState(null);
 
 	var interval = null;
 
-	var myColor;
+	var myColor, allyColor;
 
 	var oldPlayer = null;
 
@@ -738,6 +782,14 @@ let App = function Game() {
 		myGlobalColor = data;
 	}
 
+	function parseAllyColor(data){
+
+		setAllyColor(data);
+
+		allyColor = data;
+		allyGlobalColor = data;
+	}
+
 	function assignCurrentColor(data){
 
 		if(mapColorNameToColorInt(data) === myGlobalColor && !turnMessageShown) {
@@ -818,6 +870,12 @@ let App = function Game() {
 		fetch("http://localhost:8080/react/getMyColor/" + window.location.href.split("=")[1])
 		.then(response => response.text())
 		.then(data => parseColor(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getAllayColor/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseAllyColor(data))
 	},[])
 
 	useEffect(() => {
@@ -962,7 +1020,7 @@ let App = function Game() {
 
 			<BackButton rollBack={rollBack} doContinue={doContinue} debug={debug} />
 
-			<MateDialog setOpenMate={setOpenMate} openMate={openMate} />
+			<MateDialog setOpenMate={setOpenMate} openMate={openMate} currentColor={currentColor}/>
 
 			<DoneDialog setOpenDone={setOpenDone} openDone={openDone} />
 

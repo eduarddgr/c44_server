@@ -34,7 +34,6 @@ import org.bamboomy.c44.react.board.pieces.LinePiece;
 import org.bamboomy.c44.react.board.pieces.Piece;
 import org.bamboomy.c44.react.board.pieces.PlaceAttackingPiece;
 import org.bamboomy.c44.react.player.Alliance;
-import org.bamboomy.c44.react.player.Bot;
 import org.bamboomy.c44.react.player.Color;
 import org.bamboomy.c44.react.player.Player;
 import org.bamboomy.c44.react.player.RemoteBot;
@@ -143,11 +142,6 @@ public class GameMaster {
 			int seq = Color.getByName(userColor.getColor()).getSeq();
 
 			if (userColor.getIsBot().equalsIgnoreCase("Y")
-					&& (userColor.getIsExternalBot() == null || !userColor.getIsExternalBot().equalsIgnoreCase("Y"))) {
-
-				playerz[seq] = new Bot(userColor, this, allianceMap.get(Color.getByName(userColor.getColor())));
-
-			} else if (userColor.getIsBot().equalsIgnoreCase("Y")
 					&& (userColor.getIsExternalBot() != null && userColor.getIsExternalBot().equalsIgnoreCase("Y"))) {
 
 				playerz[seq] = new RemoteBot(userColor, this, allianceMap.get(Color.getByName(userColor.getColor())));
@@ -172,17 +166,6 @@ public class GameMaster {
 		for (Player player : playerz) {
 
 			player.initKing();
-		}
-
-		for (ColorsTaken userColor : userIterable) {
-
-			int seq = Color.getByName(userColor.getColor()).getSeq();
-
-			if (userColor.getIsBot().equalsIgnoreCase("Y") && userColor.getIsExternalBot() != null
-					&& !userColor.getIsExternalBot().equalsIgnoreCase("Y")) {
-
-				((Bot) playerz[seq]).init();
-			}
 		}
 
 		board.recalcuateHashes();
@@ -267,20 +250,9 @@ public class GameMaster {
 			handleNextTurn();
 		}
 
-		if (currentPlayer instanceof Bot && !fromRemoteBot) {
+		if (!robotOutput.contains("Legal move")) {
 
-			robotOutput = DEFAULT_LOCAL_OUTPUT;
-
-			((Bot) currentPlayer).init();
-
-			((Bot) currentPlayer).executeMove();
-
-		} else {
-
-			if (!robotOutput.contains("Legal move")) {
-
-				robotOutput = DEFAULT_OUTPUT;
-			}
+			robotOutput = DEFAULT_OUTPUT;
 		}
 
 		return success;
@@ -319,6 +291,11 @@ public class GameMaster {
 	}
 
 	private void handleNextTurn() {
+
+		if (currentPlayer == null) {
+
+			return;
+		}
 
 		calculateCurrentPlayerMovez();
 
@@ -446,34 +423,6 @@ public class GameMaster {
 		currentPlayerIndex = (currentPlayerIndex - 1) % playerz.length;
 	}
 
-	public synchronized String register(String colors) {
-
-		String[] colorArray = colors.split(",");
-
-		String output = "";
-
-		for (String color : colorArray) {
-
-			String md5 = getMd5();
-
-			RemoteBot remote = remotez.get(registeredRemotez.size());
-
-			remote.setRegistered(true);
-
-			remote.setPlayerHash(md5);
-
-			registeredRemotez.put(md5, remote);
-
-			output += md5 + ",";
-		}
-
-		output = output.substring(0, output.length() - 1);
-
-		System.out.println(output);
-
-		return output;
-	}
-
 	private String getMd5() {
 
 		String time = System.currentTimeMillis() + "6+time.getBytes(\"UTF-8\");";
@@ -489,7 +438,7 @@ public class GameMaster {
 				&& ((RemoteBot) currentPlayer).getPlayerHash().equalsIgnoreCase(playerHash);
 	}
 
-	public GuiPlace[][] getBoard(String playerHash) {
+	public GuiPlace[][] getBoardForCurrentPlayer() {
 
 		String color = "gray";
 
@@ -661,4 +610,16 @@ public class GameMaster {
 		}
 	}
 
+	public Player getPlayerWithColor(Color color) {
+
+		for (Player player : playerz) {
+
+			if (player.getColor().equals(color)) {
+
+				return player;
+			}
+		}
+
+		return null;
+	}
 }

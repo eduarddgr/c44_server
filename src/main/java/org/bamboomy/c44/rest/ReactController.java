@@ -43,13 +43,6 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/react/")
 
-/**
- * The REST(full) interface with the rest of the server.
- * 
- * The different end-points are documented below.
- * 
- * 
- */
 public class ReactController {
 
 	private ColorsTaken red, green, blue, yellow;
@@ -98,18 +91,17 @@ public class ReactController {
 		 */
 
 		red = new ColorsTaken("Red", "Marloes", "b1e39a47ba5f8aca96033978fb516e1f", "Green", "Y", "Y");
-		green = new ColorsTaken("Green", "Frans", "bbad6bd689f97ce9e85f7815cdd47fa8", "Red", "N", "N");
+		green = new ColorsTaken("Green", "Frans", "bbad6bd689f97ce9e85f7815cdd47fa8", "Red", "Y", "Y");
 		blue = new ColorsTaken("Blue", "Erik", "34d7fce254ffd08561f37b3bc4443796", "Yellow", "Y", "Y");
 		yellow = new ColorsTaken("Yellow", "Ann", "ea0ce8ecf5fd1d70e141d02402e75f57", "Blue", "Y", "Y");
 	}
-	
+
 	/**
 	 * 
 	 * Takes a user-hash and redirects to the board-method.
 	 * 
-	 * The user-hash for this server is hard-coded,
-	 * but will be replaced with hashes generated upon creation of the game
-	 * and are taken from the database online.
+	 * The user-hash for this server is hard-coded, but will be replaced with hashes
+	 * generated upon creation of the game and are taken from the database online.
 	 * 
 	 * @param hash only bbad6bd689f97ce9e85f7815cdd47fa8 works in this version.
 	 * @return
@@ -125,7 +117,7 @@ public class ReactController {
 		 * return new RedirectView("/negative"); }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -143,12 +135,15 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Takes a gameHash and userHash and returns the board rotated for that player as a JSON.
+	 * Takes a gameHash and userHash and returns the board rotated for that player
+	 * as a JSON.
 	 * 
 	 * The JSON is not documented but should be human-readeable.
 	 * 
-	 * @param gameHash The gameHash, hardcoded to 8ac4d9c3d324225fdbeedf99dc6a44a6 in this version.
-	 * @param userHash The userHash, the different userHashes can be found in the source-code.
+	 * @param gameHash The gameHash, hardcoded to 8ac4d9c3d324225fdbeedf99dc6a44a6
+	 *                 in this version.
+	 * @param userHash The userHash, the different userHashes can be found in the
+	 *                 source-code.
 	 * @return
 	 */
 	@RequestMapping(path = "/getBoard/{gameHash}/{userHash}", produces = "application/json")
@@ -174,7 +169,8 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Returns the gameHash from the userHash, always returns 8ac4d9c3d324225fdbeedf99dc6a44a6 in this version.
+	 * Returns the gameHash from the userHash, always returns
+	 * 8ac4d9c3d324225fdbeedf99dc6a44a6 in this version.
 	 * 
 	 * @param hash
 	 * @return
@@ -192,7 +188,7 @@ public class ReactController {
 
 		// String gameHash = ;// user.getGame();
 
-		return "8ac4d9c3d324225fdbeedf99dc6a44a6";
+		return ColorController.currentGame;
 	}
 
 	/**
@@ -209,7 +205,7 @@ public class ReactController {
 		 * ColorsTaken user = colorsTakenRepository.findByHash(hash);
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -227,14 +223,17 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Returns the color as int for the userHash given, Green is 0, Blue 1, Red 2 and Yellow 3.
-	 * (See also the Color enum in the source code for the other values).
+	 * Returns the color as int for the userHash given, Green is 0, Blue 1, Red 2
+	 * and Yellow 3. (See also the Color enum in the source code for the other
+	 * values).
 	 * 
 	 * @param hash
 	 * @return
 	 */
 	@GetMapping("/getMyColor/{hash}")
 	public int color(@PathVariable("hash") String hash) {
+
+		// should be refactored but not now (only the UI now uses this)
 
 		if (hash.equalsIgnoreCase("b1e39a47ba5f8aca96033978fb516e1f")) {
 
@@ -250,11 +249,35 @@ public class ReactController {
 		}
 
 		return 0;// getByName(colorsTakenRepository.findByHash(hash).getColor()).getSeq();
+		// (this will always be the value returned...)
+	}
+
+	@GetMapping("/getAllayColor/{hash}")
+	public int allayColor(@PathVariable("hash") String hash) {
+
+		// should be refactored but not now (only the UI now uses this)
+
+		if (hash.equalsIgnoreCase("b1e39a47ba5f8aca96033978fb516e1f")) {
+
+			return 0;
+
+		} else if (hash.equalsIgnoreCase("34d7fce254ffd08561f37b3bc4443796")) {
+
+			return 3;
+
+		} else if (hash.equalsIgnoreCase("ea0ce8ecf5fd1d70e141d02402e75f57")) {
+
+			return 1;
+		}
+
+		return 2;// getByName(colorsTakenRepository.findByHash(hash).getColor()).getSeq();
+		// (this will always be the value returned...)
 	}
 
 	/**
 	 * 
-	 * Returns whether the given userHash for the given gameHash is currently having its turn (as a boolean).  
+	 * Returns whether the given userHash for the given gameHash is currently having
+	 * its turn (as a boolean).
 	 * 
 	 * @param gameHash
 	 * @param userHash
@@ -285,15 +308,19 @@ public class ReactController {
 			return "false";
 		}
 	}
-	
+
 	/**
 	 * 
-	 * Performs a move (if the userHash is the current player for the given gameHash).
+	 * Performs a move (if the userHash is the current player for the given
+	 * gameHash).
 	 * 
-	 * @param gameHash The game
-	 * @param userHash The user
-	 * @param pieceHash The piece the user wants to move (to be found in the JSON returned by the board method).
-	 * @param square The destination square the piece wants to move to (for Casteling you need to move the king two places). (Also given in the same JSON.)
+	 * @param gameHash  The game
+	 * @param userHash  The user
+	 * @param pieceHash The piece the user wants to move (to be found in the JSON
+	 *                  returned by the board method).
+	 * @param square    The destination square the piece wants to move to (for
+	 *                  Casteling you need to move the king two places). (Also given
+	 *                  in the same JSON.)
 	 * @return
 	 */
 
@@ -319,15 +346,20 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Indicates that the mater wants to continue play (and the matee should contemplate kamikaze).
+	 * Indicates that the mater wants to continue play (and the matee should
+	 * contemplate kamikaze).
 	 * 
-	 * (A mated player is allowed to play one last "kamikaze"-move (it balances the game) once mate.)
+	 * (A mated player is allowed to play one last "kamikaze"-move (it balances the
+	 * game) once mate.)
 	 * 
-	 * The point gained by mating this player is at peril until the other player in the allicance is mated a well.
+	 * The point gained by mating this player is at peril until the other player in
+	 * the allicance is mated a well.
 	 * 
-	 * If you (or your ally) is mated; and you (or your ally) can still mate the last foe, your allicance gains 1.47 points. 
+	 * If you (or your ally) is mated; and you (or your ally) can still mate the
+	 * last foe, your allicance gains 1.47 points.
 	 * 
-	 * Mating the second enemy gains 1.3 points in total if you or your ally is not mated. 
+	 * Mating the second enemy gains 1.3 points in total if you or your ally is not
+	 * mated.
 	 * 
 	 * @param gameHash
 	 * @param userHash
@@ -341,8 +373,6 @@ public class ReactController {
 
 		// ColorsTaken user = colorsTakenRepository.findByHash(userHash);
 
-		//TODO: The server should decide kamikaze, this shouldn't be done by the user interface :( :( :(
-		
 		gameMaster.kamikaze();
 	}
 
@@ -367,7 +397,8 @@ public class ReactController {
 	 * 
 	 * The describing String of how a player is doing.
 	 * 
-	 * Gets a human readable description of the state a user is in (check for instance).
+	 * Gets a human readable description of the state a user is in (check for
+	 * instance).
 	 * 
 	 * Used by the user interface.
 	 * 
@@ -385,7 +416,7 @@ public class ReactController {
 		 * return "/negative"; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -416,7 +447,7 @@ public class ReactController {
 	/**
 	 * 
 	 * Returns the current color (as a String) of the game the user is playing in.
-	 *  
+	 * 
 	 * @param hash The userHash of the game.
 	 * @return
 	 */
@@ -431,7 +462,7 @@ public class ReactController {
 		 * return "/negative"; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -469,7 +500,7 @@ public class ReactController {
 		 * return null; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -487,7 +518,8 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Whether the current player is check (if the given hash is the current player).
+	 * Whether the current player is check (if the given hash is the current
+	 * player).
 	 * 
 	 * @param userHash
 	 * @return
@@ -505,7 +537,7 @@ public class ReactController {
 
 		Color color = getColor(userHash);
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -579,7 +611,7 @@ public class ReactController {
 			myArrayList.add(red);
 			myArrayList.add(yellow);
 
-			gameMaster.init(myArrayList);
+			// gameMaster.init(myArrayList);
 
 			if (gameMaster.getRobotHash() != null) {
 
@@ -588,20 +620,6 @@ public class ReactController {
 		}
 
 		return gameMaster;
-	}
-
-	/**
-	 * 
-	 * Rolls back the last move (will also be removed in the online version).
-	 * 
-	 * @param gameHash
-	 */
-	@RequestMapping(path = "/rollBack/{gameHash}")
-	public void rollBack(@PathVariable("gameHash") String gameHash) {
-
-		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
-
-		gameMaster.rollBack();
 	}
 
 	/**
@@ -625,7 +643,7 @@ public class ReactController {
 		 * return "/negative"; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -648,7 +666,8 @@ public class ReactController {
 	 * Whether the board is "dirty".<br/>
 	 * <br/>
 	 * 
-	 * When a board situation is posted by the postBoard method this value is used to set the color by the user interface.
+	 * When a board situation is posted by the postBoard method this value is used
+	 * to set the color by the user interface.
 	 * 
 	 * Will also be removed online.
 	 * 
@@ -667,7 +686,7 @@ public class ReactController {
 		 * return "/negative"; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -685,47 +704,6 @@ public class ReactController {
 
 	/**
 	 * 
-	 * Gets the initing robot hashes available (for the time being only one game is initing at the same time).
-	 * 
-	 * @return
-	 */
-	@RequestMapping(path = "/getInitingRobotHashes", produces = "application/json")
-	public String[] robotHashes() {
-
-		System.out.println("sending initinRobotHashes to remote bot...");
-
-		return BoardController.getInstance().getInitinRobotHashes();
-	}
-
-	/**
-	 * 
-	 * Registers the color(s) the remote bot wants to play in this game.
-	 * 
-	 * @param robotHash One of the initing robot hashes of robotHashes
-	 * @param colors The colors, comma separated for examples: see the application.properties in the bots.
-	 * @return The hashes of the colors, in the same order as the colors are given.
-	 */
-	@RequestMapping(path = "/register/{robotHash}/{colors}", produces = "application/json")
-	public String register(@PathVariable("robotHash") String robotHash, @PathVariable("colors") String colors) {
-
-		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
-
-		System.out.println("recieved register request...");
-
-		if (!gameMaster.isInited()) {
-
-			try {
-				gameMaster.getLatch().await();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		return gameMaster.register(colors);
-	}
-
-	/**
-	 * 
 	 * Returns the robot board when the bot should currently pounder upon it's move.
 	 * 
 	 * Sends null otherwise.
@@ -736,11 +714,10 @@ public class ReactController {
 	 * @param playerHash
 	 * @return
 	 */
-	@RequestMapping(path = "/getRobotBoard/{robotHash}/{playerHash}", produces = "application/json")
-	public GuiPlace[][] robotBoard(@PathVariable("robotHash") String robotHash,
-			@PathVariable("playerHash") String playerHash) {
+	@RequestMapping(path = "/getRobotBoard/{colorHash}", produces = "application/json")
+	public GuiPlace[][] robotBoard(@PathVariable("colorHash") String colorHash) {
 
-		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
+		GameMaster gameMaster = ColorController.gameMasterMapper.get(colorHash);
 
 		if (!gameMaster.isInited()) {
 
@@ -753,14 +730,14 @@ public class ReactController {
 			}
 		}
 
-		if (gameMaster.isCurrentRemote(playerHash) && gameMaster.getCurrentPlayer() != null
+		if (gameMaster.isCurrentRemote(colorHash) && gameMaster.getCurrentPlayer() != null
 				&& !(gameMaster.getCurrentPlayer().cannotMove() && !gameMaster.getCurrentPlayer().isKamikaze())) {
 
 			System.out.println("sending board to remote bot...");
 
 			gameMaster.resetRemoteOutput();
 
-			return gameMaster.getBoard(playerHash);
+			return gameMaster.getBoardForCurrentPlayer();
 
 		} else {
 
@@ -780,11 +757,11 @@ public class ReactController {
 	 * @param pieceHash
 	 * @param placeHash
 	 */
-	@RequestMapping(path = "/playBot/{robotHash}/{pieceHash}/{placeHash}", produces = "application/json")
-	public void playBot(@PathVariable("robotHash") String robotHash, @PathVariable("pieceHash") String pieceHash,
+	@RequestMapping(path = "/playBot/{colorHash}/{pieceHash}/{placeHash}", produces = "application/json")
+	public void playBot(@PathVariable("colorHash") String colorHash, @PathVariable("pieceHash") String pieceHash,
 			@PathVariable("placeHash") String placeHash) {
 
-		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
+		GameMaster gameMaster = ColorController.gameMasterMapper.get(colorHash);
 
 		gameMaster.movePiece(pieceHash, placeHash, false, true);
 
@@ -806,18 +783,19 @@ public class ReactController {
 	 * 
 	 * A method used when play is begun:
 	 * 
-	 * returns the color of the bot that is going to play (if a remote bot plays multiple colors).
+	 * returns the color of the bot that is going to play (if a remote bot plays
+	 * multiple colors).
 	 * 
 	 * @param robotHash
 	 * @param playerHash
 	 * @return
 	 */
-	@RequestMapping(path = "/getColor/{robotHash}/{playerHash}")
-	public String getColor(@PathVariable("robotHash") String robotHash, @PathVariable("playerHash") String playerHash) {
+	@RequestMapping(path = "/getColor/{colorHash}")
+	public String getColorFromHash(@PathVariable("colorHash") String colorHash) {
 
-		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
+		GameMaster gameMaster = ColorController.gameMasterMapper.get(colorHash);
 
-		String name = gameMaster.getRegisteredRemotez().get(playerHash).getColor().getName();
+		String name = gameMaster.getRegisteredRemotez().get(colorHash).getColor().getName();
 
 		System.out.println("sending " + name + " to remote bot...");
 
@@ -836,18 +814,18 @@ public class ReactController {
 	 * @param playerHash
 	 * @return
 	 */
-	@RequestMapping(path = "/getAllianceColor/{robotHash}/{playerHash}")
-	public String getAlliaceColor(@PathVariable("robotHash") String robotHash,
-			@PathVariable("playerHash") String playerHash) {
+	@RequestMapping(path = "/getAllianceColor/{colorHash}")
+	public String getAlliaceColor(@PathVariable("colorHash") String colorHash) {
 
-		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
+		GameMaster gameMaster = ColorController.gameMasterMapper.get(colorHash);
 
-		RemoteBot bot = gameMaster.getRegisteredRemotez().get(playerHash);
+		RemoteBot bot = gameMaster.getRegisteredRemotez().get(colorHash);
 
-		System.out
-				.println("sending " + bot.getAlliance().getOtherColor(bot.getColor()).getName() + " to remote bot...");
+		String allicanceColor = bot.getAlliance().getOtherColor(bot.getColor()).getName();
 
-		return bot.getAlliance().getOtherColor(bot.getColor()).getName();
+		System.out.println("sending (Alliance Color: )" + allicanceColor + " to remote bot...");
+
+		return allicanceColor;
 	}
 
 	/**
@@ -860,11 +838,10 @@ public class ReactController {
 	 * @param output
 	 * @return
 	 */
-	@PostMapping(value = "/updateOutput/{robotHash}", consumes = "text/html; charset=utf-8", produces = "text/html; charset=utf-8")
-	public String updateOutput(@PathVariable("robotHash") String robotHash, @RequestBody String output) {
+	@PostMapping(value = "/updateOutput/{colorHash}", consumes = "text/html; charset=utf-8", produces = "text/html; charset=utf-8")
+	public String updateOutput(@PathVariable("colorHash") String colorHash, @RequestBody String output) {
 
-		BoardController.getInstance().getGameMasterFromRobotHash(robotHash)
-				.setRobotOutput("Remote output:\n\n" + output);
+		ColorController.gameMasterMapper.get(colorHash).setRobotOutput("Remote output:\n\n" + output);
 
 		System.out.println("updateOutput recieved...");
 
@@ -877,7 +854,7 @@ public class ReactController {
 	 * 
 	 * Rewrites the board content.
 	 * 
-	 * After this method the postTurn must be called to continue the game. 
+	 * After this method the postTurn must be called to continue the game.
 	 * 
 	 * @param robotHash
 	 * @param boardJson
@@ -913,7 +890,7 @@ public class ReactController {
 
 		Color color = getColor(userHash);
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -956,7 +933,7 @@ public class ReactController {
 		 * return "/negative"; }
 		 */
 
-		String gameHash = "8ac4d9c3d324225fdbeedf99dc6a44a6";// user.getGame();
+		String gameHash = ColorController.currentGame;// user.getGame();
 
 		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
 
@@ -970,6 +947,47 @@ public class ReactController {
 		}
 
 		return gameMaster.isDone();
+	}
+
+	@GetMapping("/robotHash/{hash}")
+	public String robotHash(@PathVariable("hash") String hash) {
+
+		/*
+		 * ColorsTaken user = colorsTakenRepository.findByHash(hash);
+		 * 
+		 * if (user == null) {
+		 * 
+		 * return "/negative"; }
+		 */
+
+		String gameHash = ColorController.currentGame;// user.getGame();
+
+		GameMaster gameMaster = getGameMasterFromGameHash(gameHash);
+
+		if (!gameMaster.isInited()) {
+
+			try {
+				gameMaster.getLatch().await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		String result = gameMaster.getRobotHash();
+
+		return result;
+	}
+
+	@RequestMapping(path = "/calculateMovez/{robotHash}")
+	public String calculateMovez(@PathVariable("robotHash") String robotHash) {
+
+		GameMaster gameMaster = BoardController.getInstance().getGameMasterFromRobotHash(robotHash);
+
+		gameMaster.calculateMovez();
+
+		System.out.println("Movez calculated :D");
+
+		return "ok";
 	}
 
 }
