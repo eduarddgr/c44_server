@@ -17,7 +17,6 @@
 
 package org.bamboomy.c44.rest;
 
-import java.rmi.Remote;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +25,11 @@ import org.bamboomy.c44.domain.BoardController;
 import org.bamboomy.c44.domain.ColorsTaken;
 import org.bamboomy.c44.react.board.GameMaster;
 import org.bamboomy.c44.react.board.Md5;
+import org.bamboomy.c44.react.jsp.BookController;
+import org.bamboomy.c44.react.jsp.Game;
+import org.bamboomy.c44.react.jsp.GameController;
+import org.bamboomy.c44.react.jsp.MetaJudge;
+import org.bamboomy.c44.react.jsp.PortalController;
 import org.bamboomy.c44.react.player.Color;
 import org.bamboomy.c44.react.player.RemoteBot;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,13 +38,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
+/**
+ * This class handles the negotiation for the color.
+ *
+ */
 @CrossOrigin(origins = "http://localhost/", maxAge = 3600)
 @RestController
 @RequestMapping("/color/")
-
 public class ColorController {
 
 	private String[] humanGameHashes = { "b4738ee9b249caf4e3d32e6a86dfce74", "065d96772ced3404cbc4828aca210e77",
@@ -48,47 +52,164 @@ public class ColorController {
 			"b53f04b4880cc44e6d4f1137495822fd", "20b7b3d3dc5c2588719301d1c9cc8cf0", "d38c4549758f89faf155787c3e356359",
 			"c14d9e40c9ebaaefcdb971cd821fbf15", "ad8ad88211e522b1e24c981b7087ebd9" };
 
-	private String[] botGameHashes = { "b4738ee9b24555f4e3d32e6a86dfce74", "065d96772c555404cbc4828aca210e77",
+	private static String[] botGameHashes = { "b4738ee9b24555f4e3d32e6a86dfce74", "065d96772c555404cbc4828aca210e77",
 			"17399ad1555604779086434e0a5a89b3", "f187b92555f0015dca507c42771a5f40", "651248e55558416078eabca5a0d92924",
 			"b53f04b4880cc44e6d4f1135555822fd", "20b7b3d3d5552588719301d1c9cc8cf0", "d38c4555558f89faf155787c3e356359",
 			"c14d9e40c9ebaaefcdb97555821fbf15", "ad8ad882115552b1e24c981b7087ebd9" };
 
-	private String[] currentGameHashes;
+	private static String[] currentGameHashes;
 
-	private HashMap<String, String> gameMapper = new HashMap<String, String>();
+	private static HashMap<String, String> gameMapper = new HashMap<String, String>();
 
-	private HashMap<String, String> colorMapper = new HashMap<String, String>();
+	private static HashMap<String, String> colorMapper = new HashMap<String, String>();
 
 	static HashMap<String, GameMaster> gameMasterMapper = new HashMap<String, GameMaster>();
 
-	private String firstRobot = "b2e732c3bf017fd522daa46d754de02c";
-	private String secondRobot = "8470006a786856cff652c63f56889e83";
+	/*
+	private static String firstRobot = "b2e732c3bf017fd522daa46d754de02c";
+	private static String secondRobot = "8470006a786856cff652c63f56889e83";
+	*/
+	private static String firstRobot = "8470006a786856cff652c63f56889e83";
+	private static String secondRobot = "b2e732c3bf017fd522daa46d754de02c";
 
-	private static final String ONE_BOT = "Red";
-	private static final String ALL_BOTS = "Red,Green";
-
-	private String firstBotColors;
-
-	private ColorsTaken red, green, blue, yellow;
+	private static String firstBotColors;
 
 	static String currentGame;
 
-	public static final SecureRandom SECURE_RANDOM = new SecureRandom();
+	private static String nextGame;
+
+	private static int currentIndex = 0;
+
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+	/**
+	 * Public because it is changed by other classes (you won't need this)
+	 */
+	public static String ALLIANCE;
+
+	/**
+	 * Public because it is changed by other classes (you won't need this)
+	 */
+	public static String BOT_AND_HUMAN = "Red";
+
+	/**
+	 * Public because it is changed by other classes (you won't need this)
+	 */
+	public static boolean robotPlay = false;
+
+	/**
+	 * Public because it is changed by other classes (you won't need this)
+	 */
+	public static HashMap<String, Game> gameHashMap = new HashMap<String, Game>();
+
+	/**
+	 * Public because it is changed by other classes (you won't need this)
+	 */
+	public static MetaJudge metaJudge = new MetaJudge(botGameHashes);
 
 	{
-		currentGameHashes = humanGameHashes;
-		firstBotColors = ONE_BOT;
 
-		red = new ColorsTaken("Red", "Marloes", "b1e39a47ba5f8aca96033978fb516e1f", "Green", "Y", "Y");
-		green = new ColorsTaken("Green", "Frans", "bbad6bd689f97ce9e85f7815cdd47fa8", "Red", "N", "N");
-		blue = new ColorsTaken("Blue", "Erik", "34d7fce254ffd08561f37b3bc4443796", "Yellow", "Y", "Y");
-		yellow = new ColorsTaken("Yellow", "Ann", "ea0ce8ecf5fd1d70e141d02402e75f57", "Blue", "Y", "Y");
+		BookController.metaJudge = metaJudge;
+
+		if (ALLIANCE.equalsIgnoreCase(BOT_AND_HUMAN)) {
+
+			for (String md5 : botGameHashes) {
+
+				String string = System.currentTimeMillis() + "Some salted message :)";
+
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String greenHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String redHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String blueHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String yellowHash = Md5.md5(string);
+
+				ColorsTaken red, green, blue, yellow;
+
+				green = new ColorsTaken("Green", "Frans", greenHash, "Red", "N", "N");
+				red = new ColorsTaken("Red", "Marloes", redHash, "Green", "Y", "Y");
+				blue = new ColorsTaken("Blue", "Erik", blueHash, "Yellow", "Y", "Y");
+				yellow = new ColorsTaken("Yellow", "Ann", yellowHash, "Blue", "Y", "Y");
+
+				Game game = new Game(humanGameHashes[0], "Naamloos.jpg", "Not begun (yet)", "undecided", 0, green, red,
+						blue, yellow);
+
+				GameController.getInstance().putGameByPlayerHash(greenHash, game);
+				GameController.getInstance().putGameByPlayerHash(redHash, game);
+				GameController.getInstance().putGameByPlayerHash(blueHash, game);
+				GameController.getInstance().putGameByPlayerHash(yellowHash, game);
+
+				gameHashMap.put(humanGameHashes[0], game);
+
+				PortalController.game = game;
+			}
+
+		} else {
+
+			for (String md5 : botGameHashes) {
+
+				String string = System.currentTimeMillis() + "Some salted message :)";
+
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String greenHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String redHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String blueHash = Md5.md5(string);
+				string += (SECURE_RANDOM.nextDouble() * 115523);
+				String yellowHash = Md5.md5(string);
+
+				ColorsTaken red, green, blue, yellow;
+
+				green = new ColorsTaken("Green", "Frans", greenHash, "Red", "Y", "Y");
+				red = new ColorsTaken("Red", "Marloes", redHash, "Green", "Y", "Y");
+				blue = new ColorsTaken("Blue", "Erik", blueHash, "Yellow", "Y", "Y");
+				yellow = new ColorsTaken("Yellow", "Ann", yellowHash, "Blue", "Y", "Y");
+
+				Game game = new Game(md5, "Naamloos.jpg", "Not begun (yet)", "undecided", 0, green, red, blue, yellow);
+
+				BookController.books.add(game);
+
+				GameController.getInstance().putGameByPlayerHash(greenHash, game);
+				GameController.getInstance().putGameByPlayerHash(redHash, game);
+				GameController.getInstance().putGameByPlayerHash(blueHash, game);
+				GameController.getInstance().putGameByPlayerHash(yellowHash, game);
+
+				gameHashMap.put(md5, game);
+
+				metaJudge.add(md5, game);
+			}
+		}
+
+		if (ALLIANCE.equalsIgnoreCase(BOT_AND_HUMAN)) {
+
+			currentGameHashes = humanGameHashes;
+
+		} else {
+
+			currentGameHashes = botGameHashes;
+			robotPlay = true;
+
+			ReactController.setRobotPlay(robotPlay);
+		}
+
+		firstBotColors = ALLIANCE;
 
 		mapGame(currentGameHashes[0]);
 		mapColors(firstBotColors);
+
+		nextGame = currentGameHashes[1];
 	}
 
-	private void mapGame(String gameHash) {
+	/**
+	 * Only Spring uses this.
+	 */
+	public ColorController() {
+	}
+
+	private static void mapGame(String gameHash) {
 
 		gameMapper.put(firstRobot, gameHash);
 		gameMapper.put(secondRobot, gameHash);
@@ -98,18 +219,39 @@ public class ColorController {
 		getGameMasterFromGameHash(currentGame);
 	}
 
-	private void mapColors(String firstBotColors) {
+	private static void mapColors(String firstBotColors) {
 
-		colorMapper.put(firstRobot, firstBotColors);
-		colorMapper.put(secondRobot, "Blue,Yellow");
+		if (ALLIANCE.equalsIgnoreCase(BOT_AND_HUMAN)) {
+
+			colorMapper.put(secondRobot, "Blue,Yellow," + firstBotColors);
+
+		} else {
+
+			colorMapper.put(firstRobot, firstBotColors);
+			colorMapper.put(secondRobot, "Blue,Yellow");
+		}
+
 	}
 
+	/**
+	 * Asks which games are available for the given "identifierHash".
+	 * 
+	 * @param identifierHash the (unique) identifierHash which identifies the robot.
+	 * @return A valid game hash.
+	 */
 	@GetMapping("/askGame/{identifierHash}")
 	public synchronized String askGame(@PathVariable("identifierHash") String identifierHash) {
 
 		return gameMapper.get(identifierHash);
 	}
 
+	/**
+	 * Requests the colors for the given game and identifierHash.
+	 * 
+	 * @param gameHash       the gameHash
+	 * @param identifierHash the identifierHash
+	 * @return the colors
+	 */
 	@GetMapping("/askColors/{gameHash}/{identifierHash}")
 	public synchronized String askColors(@PathVariable("gameHash") String gameHash,
 			@PathVariable("identifierHash") String identifierHash) {
@@ -120,6 +262,14 @@ public class ColorController {
 		return colorMapper.get(identifierHash);
 	}
 
+	/**
+	 * Returns (and generates) the player hash for given game, color and identifier.
+	 * 
+	 * @param gameHash       the gameHash
+	 * @param color          the color
+	 * @param identifierHash the identifierHash
+	 * @return the player hash
+	 */
 	@GetMapping("/askHash/{gameHash}/{color}/{identifierHash}")
 	public synchronized String askHash(@PathVariable("gameHash") String gameHash, @PathVariable("color") String color,
 			@PathVariable("identifierHash") String identifierHash) {
@@ -145,19 +295,30 @@ public class ColorController {
 		return md5;
 	}
 
-	private synchronized GameMaster getGameMasterFromGameHash(String gameHash) {
+	private static synchronized GameMaster getGameMasterFromGameHash(String gameHash) {
 
-		GameMaster gameMaster = BoardController.getInstance().getGameMaster(gameHash);
+		GameMaster gameMaster = BoardController.getInstance().getGameMaster(gameHash, robotPlay);
 
 		if (!gameMaster.isInited()) {
 
-			/*
-			 * Game game = gameRepository.findByHash(gameHash);
-			 * 
-			 * game.setStarted("Y");
-			 * 
-			 * gameRepository.save(game);
-			 */
+			gameMaster.setMetaJudge(metaJudge);
+
+			ColorsTaken green = null, red = null, blue = null, yellow = null;
+
+			if (gameHashMap.get(gameHash) != null) {
+
+				Game game = gameHashMap.get(gameHash);
+
+				green = game.getGreen();
+				red = game.getRed();
+				blue = game.getBlue();
+				yellow = game.getYellow();
+
+				BoardController.getInstance().putGameMasterByPlayerHash(green.getJavaHash(), gameMaster);
+				BoardController.getInstance().putGameMasterByPlayerHash(red.getJavaHash(), gameMaster);
+				BoardController.getInstance().putGameMasterByPlayerHash(blue.getJavaHash(), gameMaster);
+				BoardController.getInstance().putGameMasterByPlayerHash(yellow.getJavaHash(), gameMaster);
+			}
 
 			ArrayList<ColorsTaken> myArrayList = new ArrayList<>();
 
@@ -168,6 +329,20 @@ public class ColorController {
 
 			gameMaster.init(myArrayList);
 
+			if (robotPlay) {
+
+				gameMaster.setRobotPlay(true);
+			}
+
+			if (gameHashMap.get(gameHash) != null) {
+
+				Game game = gameHashMap.get(gameHash);
+
+				gameMaster.setGame(game);
+
+				game.begin();
+			}
+
 			if (gameMaster.getRobotHash() != null) {
 
 				BoardController.getInstance().putGameMaster(gameHash, gameMaster.getRobotHash());
@@ -177,4 +352,38 @@ public class ColorController {
 		return gameMaster;
 	}
 
+	/**
+	 * (Deprecated) call to go to the next game.
+	 * 
+	 * Retained for legacy reasons,
+	 * 
+	 * will not be present and can be ignored.
+	 * 
+	 * @return a vanilla "ok" message.
+	 */
+	@GetMapping("/goToNextGame")
+	public synchronized static String goToNextGame() {
+
+		currentGame = nextGame;
+
+		currentIndex++;
+
+		nextGame = currentGameHashes[currentIndex + 1];
+
+		mapGame(currentGame);
+		mapColors(firstBotColors);
+
+		return "ok :)";
+	}
+
+	/**
+	 * Asks whether the server is booted in robotplay (or human play).
+	 * 
+	 * @return A boolean whether the server is booted in robotplay.
+	 */
+	@GetMapping("/robotPlay")
+	public synchronized boolean robotPlay() {
+
+		return robotPlay;
+	}
 }

@@ -39,7 +39,7 @@ public class GuiPiece {
 
 	private boolean moved = false;
 
-	public GuiPiece(Piece piece, String color, boolean currentPlayer) {
+	public GuiPiece(Piece piece, String color, boolean currentPlayer, String recordedPieceHash, String recordedSquare) {
 
 		identifier = piece.getIdentifier();
 
@@ -62,18 +62,44 @@ public class GuiPiece {
 
 			this.md5 = piece.getMd5();
 
-			for (Move move : piece.getMovez()) {
+			if (recordedPieceHash != null) {
 
-				if (move.getFrom() != null) { // exclude enPassants (for now :())
+				if (recordedPieceHash.equalsIgnoreCase(md5)) {
 
-					movez.add(new GuiMove(move.getFrom().toGuiPlace(), move.getTo().toGuiPlace(true),
-							move.getIdentifier()));
+					for (Move move : piece.getMovez()) {
 
-				} else {
+						if (move.getFrom() != null && move.getTo().getMd5().equalsIgnoreCase(recordedSquare)) { // exclude
+																												// enPassants
+																												// (for
+																												// now
+																												// :())
 
-					System.out.println("from is null");
+							movez.add(new GuiMove(move.getFrom().toGuiPlace(), move.getTo().toGuiPlace(true),
+									move.getIdentifier()));
+
+						} else {
+
+							System.out.println("from is null");
+						}
+					}
+				}
+
+			} else {
+
+				for (Move move : piece.getMovez()) {
+
+					if (move.getFrom() != null) { // exclude enPassants (for now :())
+
+						movez.add(new GuiMove(move.getFrom().toGuiPlace(), move.getTo().toGuiPlace(true),
+								move.getIdentifier()));
+
+					} else {
+
+						System.out.println("from is null");
+					}
 				}
 			}
+
 		}
 	}
 }

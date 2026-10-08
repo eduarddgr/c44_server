@@ -9,6 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Playwrite+DE+SAS:wght@100..400&family=Playwrite+NO:wght@100..400&family=Playwrite+NZ+Guides&display=swap" rel="stylesheet">
 
+<!--
+
+/home/xander/git/2/c44_server/index.html
+
+-->
+
 <style>
 
 .googleFont {
@@ -79,37 +85,262 @@ var lastMovesArray = [];
 
 var myGlobalColor, allyGlobalColor;
 
-function ColorDialog({setDirty, dirty, postTurn}) {
+var robotPlay = false;
+
+var adjucating = false;
+
+var adjucated = false;
+
+var adjucationShown = false;
+
+var temporaryResult = "";
+
+var finalSituation = "";
+
+$( document ).ready(function() {
+	$.ajax({url: "http://localhost:8080/react/isMoveMade/" + window.location.href.split("=")[1]}).done(function(data){
+
+		if(data === "ok"){
+
+			setTimeout(function () {
+				window.location.reload();
+			}, 5000);
+		}
+	});
+});
+
+function adjucate(){
+
+	if(adjucating){
+
+		return;
+	}
+
+	adjucating = true;
+
+	setInterval(function()
+		{
+
+				if(!adjucated){
+
+				$.ajax({url: "http://localhost:8080/react/adjucate/" + window.location.href.split("=")[1]}).done(function(data){
+
+					if(data !== "ADJUCATING"){
+
+					adjucated = true;
+
+						if(data === "FINISHED"){
+
+							$(".context").html("The game is finished...");
+
+						} else if(data === "LAST_MAN_STANDING"){
+
+							var text = "Both alliances suffered a loss...<br/><br/>";
+							text += "the last man standing will decide the victory...";
+
+							$(".context").html(text);
+
+						} else {
+
+							$(".adjudication").html(data);
+						}
+
+						setTimeout(function () {
+							window.location.reload();
+						}, 5000);
+
+					}});
+			}
+		}, 500);
+}
+
+function DebugColorDialog({showDebugColor, postDebugColor}) {
 
   const handleGreen = () => {
-    postTurn(0);
+    postDebugColor(0);
     window.location.reload();
   };
 
   const handleBlue = () => {
-    postTurn(1);
+    postDebugColor(1);
     window.location.reload();
   };
 
   const handleRed = () => {
-    postTurn(2);
+    postDebugColor(2);
     window.location.reload();
   };
 
   const handleYellow = () => {
-    postTurn(3);
+    postDebugColor(3);
+    window.location.reload();
+  };
+
+	const handleClose = () => {
+    showDebugColor = false;
+  };
+
+  return (
+    <React.Fragment>
+
+    <Dialog
+        open={showDebugColor}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+        onClose={handleClose}
+      >
+        <DialogTitle id="alert-dialog-title">
+          Which color do you want to debug?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+			Choose the color where you want the values from...
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleGreen}>Green</Button>
+          <Button onClick={handleBlue}>Blue</Button>
+          <Button onClick={handleRed}>Red</Button>
+          <Button onClick={handleYellow}>Yellow</Button>
+        </DialogActions>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+
+function ExceptionDialog({stacktrace, showExceptionDialog}) {
+
+	function copyFunction() {
+
+		navigator.clipboard.writeText(stacktrace);
+
+		alert("Copied the stacktrace...");
+	}
+
+		function download(data, filename, type) {
+		var a = document.createElement("a"),
+			file = new Blob([data], {type: type});
+		if (window.navigator.msSaveOrOpenBlob) // IE10+
+			window.navigator.msSaveOrOpenBlob(file, filename);
+		else { // Others
+			var url = URL.createObjectURL(file);
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			setTimeout(function() {
+					document.body.removeChild(a);
+					window.URL.revokeObjectURL(url);
+				}, 0);
+			}
+	}
+
+
+		function debug(){
+
+		//download("debug", "debug.json", "application/json");
+
+		fetch("http://localhost:8080/react/getGame/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => download(data, "debug.json", "application/json"));
+
+		}
+
+	return (
+    <React.Fragment>
+
+    <Dialog
+        open={showExceptionDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          The robot encountered an error :(
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+			Please file a bug with <button type="button" onClick={copyFunction}>this stacktrace</button>.<br/>
+			<br/>
+			Also please include the Json: <button type="button" onClick={debug}>Download Json</button>
+			<br/>
+			<br/>
+			The game cannot continue :(...
+          </DialogContentText>
+        </DialogContent>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+function RomanDialog({roman}) {
+
+	if(roman){
+		adjucate();
+	}
+
+	return (
+    <React.Fragment>
+
+    <Dialog
+        open={roman}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          What will he decide?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+          <center>
+			The Almighty Referee (T.A.R.)<br/>
+			<br/>
+			<div class="context">
+				adjudicates that this madness should...<br/>
+				<br/>
+				<div class="adjudication">
+					<img src="imgz/adjudicate.gif" />
+				</div>
+			</div>
+          </center>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+        </DialogActions>
+      </Dialog>
+
+      </React.Fragment>
+  );
+}
+
+function ColorDialog({setDirty, dirty, postTurn}) {
+
+  const handleGreen = () => {
+    postTurn(0, $("#iterate").val());
+    window.location.reload();
+  };
+
+  const handleBlue = () => {
+    postTurn(1, $("#iterate").val());
+    window.location.reload();
+  };
+
+  const handleRed = () => {
+    postTurn(2, $("#iterate").val());
+    window.location.reload();
+  };
+
+  const handleYellow = () => {
+    postTurn(3, $("#iterate").val());
     window.location.reload();
   };
 
   const handleClose = () => {
     setDirty(false);
   };
-
-  /*
-			<br/>
-			<input type="checkbox" id="iterate" name="iterate" value="true"/>
-			<label for="iterate"> Iterate over possible moves</label><br/>
-  */
 
   return (
     <React.Fragment>
@@ -129,6 +360,9 @@ function ColorDialog({setDirty, dirty, postTurn}) {
 			This board has gotten a rewrite but it's not clear which color is next?<br/>
 			<br/>
 			Can you choose which color that needs to move now?<br/>
+			<br/>
+			<input type="checkbox" id="iterate" name="iterate"/>
+			<label for="iterate"> I want to debug...</label><br/>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -145,16 +379,22 @@ function ColorDialog({setDirty, dirty, postTurn}) {
 
 function MateDialog({setOpenMate, openMate, currentColor}) {
 
-	const [openDominate, setOpenDominate] = React.useState(false);
+	const twoTitle = "Just the two of you now...";
+
+		var dominateTitle = "Before you proceed...";
+		var dominateExit = "No, wait!";
+
+		const [openDominate, setOpenDominate] = React.useState(false);
 
   const handleClickOpen = () => {
     setOpenMate(true);
   };
 
   const handleClose = () => {
-    setOpenMate(false);
 
-    window.location.assign("http://localhost:8080/c44/all.html");
+			fetch('http://localhost:8080/react/setDone/' + window.location.href.split("=")[1]);
+
+			window.location.reload();
   };
 
   const handleOpenDominate = () => {
@@ -162,8 +402,19 @@ function MateDialog({setOpenMate, openMate, currentColor}) {
   };
 
   const handleCloseDominate = () => {
-    setOpenDominate(false);
-  };
+
+		if(dominateTitle == twoTitle){
+
+			fetch('http://localhost:8080/react/setDone/' + window.location.href.split("=")[1]);
+
+			window.location.reload();
+
+		} else {
+
+			setOpenDominate(false);
+		}
+
+	};
 
   const handleCloseBoth = () => {
 
@@ -192,7 +443,7 @@ function MateDialog({setOpenMate, openMate, currentColor}) {
          } else if(currentColor !== null && mapColorNameToColorInt(currentColor) === myGlobalColor) {
 
 	text = "Ow, it seems like you don't have any moves anymore :('\n\n";
-         text += "do you want your ally to attempt to avenge?\n\n";
+         text += "do you want your ally to attempt to avenge you?\n\n";
          text += "Or does (this game) end for you now?";
 
          stop = "Goodbye!";
@@ -203,28 +454,49 @@ function MateDialog({setOpenMate, openMate, currentColor}) {
 
   } else {
 
-  text = "Where regular chess ends -> C44 goes beyond!!!<br/>";
-            text += "<br/>";
-            text += "You can:<br/>";
-            text += "- claim this victory:<br/>";
-            text += "(You'll get 1 point (and all the glory)!)<br/>";
-            text += "- Or you can choose to try to dominate:<br/>";
-            text += "(so try to mate the remaining opponent)<br/>";
-            text += "<br/>";
-            text += "But, be aware!!!<br/>";
-            text += "Trying to dominate is not without peril!:<br/>";
-            text += "If the opponent mates you (or your ally) you can lose your point,<br/>";
-            text += "however:<br/>";
-            text += "if you can mate the remaining opponent there is a subtile reward:<br/>";
-            text += "You'll get .3 additional points from your victory...<br/>";
-            text += "<br/>";
-            text += "Then again: if your opponent mates your ally<br/>";
-            text += "and you can still mate him/her you get 1.47 points...";
+  text = "Where regular chess ends -> C44 goes beyond!!!\n";
+            text += "\n";
+            text += "You can:\n";
+            text += "- claim this victory:\n";
+            text += "(You'll get 1 point (and all the glory)!)\n";
+            text += "- Or you can choose to try to dominate:\n";
+            text += "(so try to mate the remaining opponent)\n";
+            text += "\n";
+            text += "But, be aware!!!\n";
+            text += "Trying to dominate is not without peril!:\n";
+            text += "If the opponent mates you (or your ally) you can lose your point,\n";
+            text += "however:\n";
+            text += "if you can mate the remaining opponent there is a subtile reward:\n";
+            text += "You'll get .3 additional points from your victory...\n";
+            text += "\n";
+            text += "Then again: if your opponent mates your ally\n";
+            text += "(or you) \n";
+            text += "and the remaining ally can still mate him/her you get 1.47 points...";
 
                      stop = "Claim victory";
 
          goOn = "Of course I want to dominate!";
 
+		}
+
+		if(temporaryResult === ""){
+
+			temporaryResult = "So you want to dominate?\n";
+			temporaryResult += "\n";
+			temporaryResult += "There are a couple of things you might want to consider:\n";
+			temporaryResult += "\n";
+			temporaryResult += "1) Just before death the mated player will execute\n";
+			temporaryResult += "one last 'kamikaze-move':\n";
+			temporaryResult += "(s)he can make any (legal) move with any piece...\n";
+			temporaryResult += "\n";
+			temporaryResult += "2) You (or your ally) are obliged to capture the king, any way you can,\n";
+			temporaryResult += "and those are the only legal moves your turn (or the turn of your ally)...\n";
+			temporaryResult += "(after the kamikaze-move of the mated player).";
+
+		} else {
+
+			dominateTitle = twoTitle;
+			dominateExit = "I'm out!";
 		}
 
   return (
@@ -259,27 +531,16 @@ function MateDialog({setOpenMate, openMate, currentColor}) {
         role="alertdialog"
       >
         <DialogTitle id="alert-dialog-title">
-          Before you proceed...
+          {dominateTitle}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-			So you want to domitate?<br/>
-			<br/>
-			There are a couple of things you might want to consider:<br/>
-			<br/>
-			1) Just before death the mated player will execute<br/>
-			one last "kamikaze-move":<br/>
-			(s)he can make any (legal) move with any piece...<br/>
-			<br/>
-			2) You (or your ally) are obliged to capture the king, any way you can,<br/>
-			and those are the only legal moves your turn (or the turn of your ally)...<br/>
-			(after the kamikaze-move of the mated player).
-			<br/>
+          <DialogContentText id="alert-dialog-description" class="css-fix">
+			{temporaryResult}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDominate}>
-            No, wait!
+			{dominateExit}
           </Button>
           <Button onClick={handleCloseBoth}>Let's boogy :)</Button>
         </DialogActions>
@@ -291,9 +552,30 @@ function MateDialog({setOpenMate, openMate, currentColor}) {
 
 function DoneDialog({setOpenDone, openDone}) {
 
+	var result = finalSituation.split("_")[0];
+	var points = finalSituation.split("_")[1];
+
 	const getAway = () => {
+
+	fetch('http://localhost:8080/color/goToNextGame');
+
 		window.location.assign("all.html");
   };
+
+  	const normal = {
+	};
+
+	const tie = {
+		backgroundImage: 'url("imgz/tie.jpg")',
+	};
+
+	var css = normal;
+
+	if(result.includes("tie")){
+
+		css = tie;
+	}
+
 
   return (
     <React.Fragment>
@@ -304,15 +586,14 @@ function DoneDialog({setOpenDone, openDone}) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
         role="alertdialog"
+        style={css}
       >
         <DialogTitle id="alert-dialog-title">
-          Great news everyone!: The Green-Red Alliance has won!!!!
+          {result}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-			That's 1.3 points for the good guys,<br/>
-			<br/>
-			a glorious victory indeed!!!
+			Each player gets {points} point(s).
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -337,7 +618,7 @@ function parseLastMovez(movez){
 	JSON.parse(movez).forEach(parseMove);
 }
 
-function lookUpLastMove(i, j){
+function lookUpOneOfLastMove(i, j){
 
 	for (let k = 0; k < lastMovesArray.length; k++) {
 		
@@ -349,6 +630,25 @@ function lookUpLastMove(i, j){
 		}
 	}
 	
+	return false;
+}
+
+function lookUpLastMove(i, j){
+
+	if(lastMovesArray.length !== 0 && lastMovesArray[lastMovesArray.length - 1] !== null
+		&& mapMoveColorToX(myGlobalColor, lastMovesArray[lastMovesArray.length - 1].x, lastMovesArray[lastMovesArray.length - 1].y) == i
+		&& mapMoveColorToY(myGlobalColor, lastMovesArray[lastMovesArray.length - 1].x, lastMovesArray[lastMovesArray.length - 1].y) == j){
+
+		return true;
+	}
+
+	if(lastMovesArray.length !== 0 && lastMovesArray[lastMovesArray.length - 2] !== null
+		&& mapMoveColorToX(myGlobalColor, lastMovesArray[lastMovesArray.length - 2].x, lastMovesArray[lastMovesArray.length - 2].y) == i
+		&& mapMoveColorToY(myGlobalColor, lastMovesArray[lastMovesArray.length - 2].x, lastMovesArray[lastMovesArray.length - 2].y) == j){
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -391,6 +691,12 @@ function Piece({ i, j, piece, src, background, showMovez, blank }) {
 		border: 'solid CornflowerBlue',
 	};
 
+	const orange = {
+		border: 'solid orange',
+	};
+
+	var isOneOfLastMove = lookUpOneOfLastMove(i, j);
+
 	var isLastMove = lookUpLastMove(i, j);
 
 	if( i < 2 && j < 2 || i < 2 && j > 9 || i > 9 && j < 2 || i > 9 && j > 9){
@@ -401,14 +707,26 @@ function Piece({ i, j, piece, src, background, showMovez, blank }) {
 			</>
 		);
 
-	} else if(isLastMove){
+	} else if(isOneOfLastMove){
 
-		return (
-			<a onClick={escalateMovez}>
-				<img id={id} src={background} width="30" height="30" style={black} />
-				<img class="data" src={src} width="30" height="35" />
-			</a>
-		);
+		if(isLastMove){
+
+			return (
+				<a onClick={escalateMovez}>
+					<img id={id} src={background} width="30" height="30" style={orange} />
+					<img class="data" src={src} width="30" height="35" />
+				</a>
+			);
+
+		} else {
+
+			return (
+				<a onClick={escalateMovez}>
+					<img id={id} src={background} width="30" height="30" style={black} />
+					<img class="data" src={src} width="30" height="35" />
+				</a>
+			);
+		}
 	
 	} else if(blank === "blank"){
 	
@@ -627,11 +945,13 @@ export default function Board({ pieces, places, updatePlaces, currentColor,
 function Referee({ currentName }) {
 
 	return <div id="referee" class="googleFont">
-		I am the almighty Referee!!!<br/>
-		<br/>
-		The current player is:<br/>
-		<br/>
-		{currentName}
+			I am the almighty Referee!!!<br/>
+			<br/>
+			<div id="refereeContext">
+				The current player is:<br/>
+				<br/>
+				{currentName}
+			</div>
 		</div>;
 }
 
@@ -687,6 +1007,12 @@ let App = function Game() {
 
 	const [openDone, setOpenDone] = React.useState(false);
 
+	const [showDebugColor, setShowDebugColor] = React.useState(false);
+
+	const [stacktrace, setStacktrace] = React.useState(null);
+
+	const [showExceptionDialog, setShowExceptionDialog] = React.useState(false);
+
 	function sendMd5(md5){
 
 		if(currentPiece !== null){
@@ -702,9 +1028,17 @@ let App = function Game() {
 		}
 	}
 
-	function postTurn(turn){
+	function postTurn(turn, debug){
 
 	fetch('http://localhost:8080/react/postTurn/'
+						+ gameHash + "/" + turn + "/" + debug);
+
+			window.location.reload();
+	}
+
+	function postDebugColor(turn){
+
+		fetch('http://localhost:8080/react/postDebugColor/'
 						+ gameHash + "/" + turn);
 
 			window.location.reload();
@@ -792,7 +1126,7 @@ let App = function Game() {
 
 	function assignCurrentColor(data){
 
-		if(mapColorNameToColorInt(data) === myGlobalColor && !turnMessageShown) {
+		if(mapColorNameToColorInt(data) === myGlobalColor && !turnMessageShown && !robotPlay) {
 
 			alert("It's your turn...");
 
@@ -814,7 +1148,7 @@ let App = function Game() {
 
 	function setCheck(movez){
 
-		if(movez === "true" && !checkMessageShown){
+		if(movez === "true" && !checkMessageShown && !robotPlay){
 
 			alert("You are in check...");
 
@@ -866,6 +1200,43 @@ let App = function Game() {
 		}
 	}
 
+	function translateDebugColor(data){
+
+		if(data === 'true'){
+
+			setShowDebugColor(true);
+
+		} else {
+
+			setShowDebugColor(false);
+		}
+	}
+
+	function parseStackTrace(data){
+
+		if(data !== ""){
+
+			setStacktrace(data);
+			setShowExceptionDialog(true);
+		}
+	}
+
+	function parseTemporaryResult(data){
+
+		if(data !== ""){
+
+			temporaryResult = data;
+		}
+	}
+
+	function parseTemporarySituation(data){
+
+		if(data !== ""){
+
+			finalSituation = data;
+		}
+	}
+
 	useEffect(() => {
 		fetch("http://localhost:8080/react/getMyColor/" + window.location.href.split("=")[1])
 		.then(response => response.text())
@@ -885,6 +1256,12 @@ let App = function Game() {
 	},[])
 
 	useEffect(() => {
+		fetch("http://localhost:8080/color/robotPlay")
+		.then(response => response.text())
+		.then(data => updateRobotPlay(data))
+	},[])
+
+	useEffect(() => {
 		fetch("http://localhost:8080/react/getGameHash/" + window.location.href.split("=")[1])
 		.then(response => response.text())
 		.then(data => persistGameHash(data))
@@ -900,12 +1277,6 @@ let App = function Game() {
 		fetch("http://localhost:8080/react/getCurrentPlayerString/" + window.location.href.split("=")[1])
 		.then(response => response.text())
 		.then(data => setName(data))
-	},[])
-
-	useEffect(() => {
-		fetch("http://localhost:8080/react/getCurrentColor/" + window.location.href.split("=")[1])
-		.then(response => response.text())
-		.then(data => assignCurrentColor(data))
 	},[])
 
 	useEffect(() => {
@@ -948,6 +1319,41 @@ let App = function Game() {
 		.then(data => updateDone(data))
 	},[])
 
+	useEffect(() => {
+		fetch("http://localhost:8080/react/finished/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => updateFinished(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getCurrentColor/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => assignCurrentColor(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/showDebugColor/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => translateDebugColor(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/getException/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseStackTrace(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/temporaryResult/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseTemporaryResult(data))
+	},[])
+
+	useEffect(() => {
+		fetch("http://localhost:8080/react/finalSituation/" + window.location.href.split("=")[1])
+		.then(response => response.text())
+		.then(data => parseTemporarySituation(data))
+	},[])
 
 	function doContinue(){
 
@@ -982,15 +1388,31 @@ let App = function Game() {
 
 		}
 
+	function updateRobotPlay(data){
+
+		if(data === "false") {
+
+			robotPlay = false;
+
+		} else {
+
+			robotPlay = true;
+		}
+	}
+
 	function updateOpen(data){
 
 		if(data === "false") {
 
 			setOpenMate(false);
 
-		} else {
+		} else if(data === "true") {
 
 			setOpenMate(true);
+
+		} else {
+
+			console.log("error :(");
 		}
 	}
 
@@ -1003,6 +1425,19 @@ let App = function Game() {
 		} else {
 
 			setOpenDone(true);
+		}
+	}
+
+	function updateFinished(data){
+
+		if(data !== "false") {
+
+			$( document ).ready(function() {
+				$.ajax({url: "http://localhost:8080/react/result/" + window.location.href.split("=")[1]}).done(function(data){
+
+					$("#refereeContext").html(data);
+				});
+			});
 		}
 	}
 
@@ -1020,11 +1455,17 @@ let App = function Game() {
 
 			<BackButton rollBack={rollBack} doContinue={doContinue} debug={debug} />
 
-			<MateDialog setOpenMate={setOpenMate} openMate={openMate} currentColor={currentColor}/>
+			<MateDialog setOpenMate={setOpenMate} openMate={openMate && !robotPlay} currentColor={currentColor}/>
 
 			<DoneDialog setOpenDone={setOpenDone} openDone={openDone} />
 
 			<ColorDialog setDirty={setDirty} dirty={dirty} postTurn={postTurn} />
+
+			<DebugColorDialog showDebugColor={showDebugColor} postDebugColor={postDebugColor} />
+
+			<RomanDialog roman={openMate && robotPlay && !adjucationShown} />
+
+			<ExceptionDialog stacktrace={stacktrace} showExceptionDialog={showExceptionDialog} />
 
 			</div>
 	);

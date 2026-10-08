@@ -78,6 +78,10 @@ public class Player {
 	@Setter
 	private boolean dead = false;
 
+	@Setter
+	@Getter
+	private String name = null;
+
 	public Player(ColorsTaken userColor, GameMaster gameMaster, Alliance alliance) {
 
 		this.colorsTaken = userColor;
@@ -193,7 +197,7 @@ public class Player {
 
 	public String getString() {
 
-		return color.getName() + " (" + colorsTaken.getName() + ")";
+		return color.getName() + " (" + name + ")";
 	}
 
 	public void calculateMovez() {
@@ -253,13 +257,13 @@ public class Player {
 
 	public void filterCheckMovez(King firstKing, King secondKing) {
 
-		for (Piece piece : piecez) {
-
-			if (!piece.isRemoved() && !(piece instanceof King)) {
-
-				piece.calculateMovez();
-			}
-		}
+		/*
+		 * for (Piece piece : piecez) {
+		 * 
+		 * if (!piece.isRemoved() && !(piece instanceof King)) {
+		 * 
+		 * piece.calculateMovez(); } }
+		 */
 
 		for (Piece piece : piecez) {
 

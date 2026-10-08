@@ -104,7 +104,7 @@ public class Board {
 		return found;
 	}
 
-	public GuiPlace[][] getGuiArray(String color, boolean currentPlayer) {
+	public GuiPlace[][] getGuiArray(String color, boolean currentPlayer, String recordedPieceHash, String recordedSquare) {
 
 		GuiPlace[][] result = new GuiPlace[12][12];
 
@@ -113,7 +113,7 @@ public class Board {
 
 				if (placez[i][j] != null) {
 
-					result[i][j] = placez[i][j].toGuiPlace(color, currentPlayer);
+					result[i][j] = placez[i][j].toGuiPlace(color, currentPlayer, recordedPieceHash, recordedSquare);
 				}
 			}
 		}

@@ -58,7 +58,7 @@ public abstract class PlaceAttackingPiece extends Piece {
 							.getPlayer().getColor()
 					&& kingPlayer.getKing().shouldBeAttacked(otherPlace)) {
 
-				attackingPlaces.add(kingPlayer.getKing().addAttack(otherPlace));
+				attackingPlaces.add(kingPlayer.getKing().addAttack(otherPlace, this));
 			}
 		}
 	}

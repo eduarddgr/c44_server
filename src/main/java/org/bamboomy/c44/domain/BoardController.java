@@ -38,6 +38,8 @@ public class BoardController {
 	@Getter
 	public static final Map<String, GameMaster> GAMEZ_BY_ROBOTHASH;
 
+	public static final Map<String, GameMaster> GAMEZ_BY_PLAYER;
+
 	private static final int MAX_ENTRIES = 7 * 1000;
 
 	static {
@@ -75,6 +77,23 @@ public class BoardController {
 		};
 
 		GAMEZ_BY_ROBOTHASH = (Map<String, GameMaster>) Collections.synchronizedMap(innerCache);
+
+		innerCache = new LinkedHashMap<String, GameMaster>(MAX_ENTRIES + 1, .75F, true) {
+
+			private static final long serialVersionUID = 1L;
+
+			// This method is called just after a new entry has been added
+			public boolean removeEldestEntry(Map.Entry eldest) {
+
+				boolean remove = size() > MAX_ENTRIES;
+
+				System.out.println("cache removal? -> " + remove);
+
+				return remove;
+			}
+		};
+
+		GAMEZ_BY_PLAYER = (Map<String, GameMaster>) Collections.synchronizedMap(innerCache);
 	}
 
 	private BoardController() {
@@ -89,13 +108,13 @@ public class BoardController {
 		return single_instance;
 	}
 
-	public synchronized GameMaster getGameMaster(String hash) {
+	public synchronized GameMaster getGameMaster(String hash, boolean robotPlay) {
 
 		GameMaster result = GAMEZ.get(hash);
 
 		if (GAMEZ.get(hash) == null) {
 
-			result = new GameMaster(hash);
+			result = new GameMaster(hash, robotPlay);
 
 			GAMEZ.put(hash, result);
 		}
@@ -127,9 +146,19 @@ public class BoardController {
 		GAMEZ_BY_ROBOTHASH.put(robotHash, GAMEZ.get(gameHash));
 	}
 
+	public void putGameMasterByPlayerHash(String playerHash, GameMaster gameMaster) {
+
+		GAMEZ_BY_PLAYER.put(playerHash, gameMaster);
+	}
+
 	public GameMaster getGameMasterFromRobotHash(String robotHash) {
 
 		return GAMEZ_BY_ROBOTHASH.get(robotHash);
+	}
+
+	public GameMaster getGameMasterFromPlayerHash(String playerHash) {
+
+		return GAMEZ_BY_PLAYER.get(playerHash);
 	}
 
 	public String[] getInitinRobotHashes() {

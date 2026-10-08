@@ -18,12 +18,16 @@
 
 package org.bamboomy.c44;
 
+import java.io.IOException;
+import java.util.Properties;
+
+import org.bamboomy.c44.rest.ColorController;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
-@SpringBootApplication(scanBasePackages={"org.bamboomy.c44"})
+@SpringBootApplication(scanBasePackages = { "org.bamboomy.c44" })
 public class Application extends SpringBootServletInitializer {
 
 	@Override
@@ -32,9 +36,21 @@ public class Application extends SpringBootServletInitializer {
 	}
 
 	public static void main(String[] args) throws Exception {
+		Properties prop = new Properties();
+
+		try {
+
+			prop.load(Application.class.getClassLoader().getResourceAsStream("application.properties"));
+
+			ColorController.ALLIANCE = prop.getProperty("server.mode");
+
+			System.out.println("colors: " + ColorController.ALLIANCE);
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+
 		SpringApplication.run(Application.class, args);
-		
-		//Runner.run();
 	}
 
 }

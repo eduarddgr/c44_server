@@ -30,8 +30,6 @@ public class Alliance {
 
 		this.one = one;
 		this.two = two;
-
-		System.out.println("Alliance::" + one.getName() + ", " + two.getName());
 	}
 
 	public Color getOtherColor(Color color) {

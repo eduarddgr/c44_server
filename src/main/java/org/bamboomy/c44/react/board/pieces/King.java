@@ -42,7 +42,7 @@ public class King extends PlaceAttackingPiece {
 	@Getter
 	private ArrayList<Attack> attackedPlaces = new ArrayList<>();
 
-	private ArrayList<Rocade> rocades = new ArrayList<>();
+	// private ArrayList<Rocade> rocades = new ArrayList<>();
 
 	public King(Place place, int color, int xDelta, int yDelta, Player player, String identifier) {
 
@@ -82,12 +82,13 @@ public class King extends PlaceAttackingPiece {
 
 		possibleMoves = new ArrayList<>();
 
-		for (Rocade rocade : rocades) {
-
-			rocade.destroy();
-		}
-
-		rocades = new ArrayList<Rocade>();
+		/*
+		 * for (Rocade rocade : rocades) {
+		 * 
+		 * rocade.destroy(); }
+		 * 
+		 * rocades = new ArrayList<Rocade>();
+		 */
 
 		int k = currentPlace.getX() + 1;
 		int l = currentPlace.getY() + 1;
@@ -212,9 +213,9 @@ public class King extends PlaceAttackingPiece {
 			}
 		}
 
-		checkRocadeRight();
+		// checkRocadeRight();
 
-		checkRocadeLeft();
+		// checkRocadeLeft();
 
 		log.debug("there are: {} possible movez", possibleMoves.size());
 
@@ -223,14 +224,19 @@ public class King extends PlaceAttackingPiece {
 
 	public synchronized boolean isCheck() {
 
-		if (currentPlace.isAttackedForKingByKingline(player.getColor())) {
+		if (player.isDead()) {
+
+			return false;
+		}
+
+		if (currentPlace.isAttackedForKingByKingline(player.getAlliance().getOtherAlliance())) {
 
 			return true;
 		}
 
 		for (Attack place : attackedPlaces) {
 
-			if (place.getPlace() == currentPlace) {
+			if (place.getPlace() == currentPlace && !place.getPiece().isRemoved()) {
 
 				return true;
 			}
@@ -244,7 +250,7 @@ public class King extends PlaceAttackingPiece {
 
 		movez = new ArrayList<>();
 
-		ArrayList<Rocade> possibleRocades = new ArrayList<Rocade>(rocades);
+		// ArrayList<Rocade> possibleRocades = new ArrayList<Rocade>(rocades);
 
 		ArrayList<Rocade> toRemove = new ArrayList<Rocade>();
 
@@ -254,31 +260,31 @@ public class King extends PlaceAttackingPiece {
 
 			for (LinePieceLine kingLine : possiblePlace.getKingLinez()) {
 
-				if (!player.getAlliance().isInAlliance((kingLine.getPiece().getPlayer().getColor()))
-						&& (kingLine.getPossibleKingLineList().size() == 0) || kingLine.isAttacking(this)) {
+				if ((!player.getAlliance().isInAlliance((kingLine.getPiece().getPlayer().getColor())))
+						&& ((kingLine.getPossibleKingLineList().size() == 0) || kingLine.isAttacking(this))) {
 
 					valid = false;
 					break;
 				}
 			}
 
-			for (Rocade rocade : possibleRocades) {
-
-				if (!valid && rocade.contains(possiblePlace)) {
-
-					toRemove.add(rocade);
-				}
-			}
+			/*
+			 * for (Rocade rocade : possibleRocades) {
+			 * 
+			 * if (!valid && rocade.contains(possiblePlace)) {
+			 * 
+			 * toRemove.add(rocade); } }
+			 */
 
 			for (Attack attack : attackedPlaces) {
 
-				for (Rocade rocade : possibleRocades) {
-
-					if (rocade.contains(attack.getPlace())) {
-
-						toRemove.add(rocade);
-					}
-				}
+				/*
+				 * for (Rocade rocade : possibleRocades) {
+				 * 
+				 * if (rocade.contains(attack.getPlace())) {
+				 * 
+				 * toRemove.add(rocade); } }
+				 */
 
 				if (possiblePlace == attack.getPlace()) {
 
@@ -292,12 +298,13 @@ public class King extends PlaceAttackingPiece {
 			}
 		}
 
-		possibleRocades.removeAll(toRemove);
-
-		for (Rocade rocade : possibleRocades) {
-
-			movez.add(rocade);
-		}
+		/*
+		 * possibleRocades.removeAll(toRemove);
+		 * 
+		 * for (Rocade rocade : possibleRocades) {
+		 * 
+		 * movez.add(rocade); }
+		 */
 
 		inited = true;
 	}
@@ -309,13 +316,13 @@ public class King extends PlaceAttackingPiece {
 			return true;
 		}
 
-		for (Rocade rocade : rocades) {
-
-			if (rocade.contains(otherPlace)) {
-
-				return true;
-			}
-		}
+		/*
+		 * for (Rocade rocade : rocades) {
+		 * 
+		 * if (rocade.contains(otherPlace)) {
+		 * 
+		 * return true; } }
+		 */
 
 		for (Place possibleMove : possibleMoves) {
 
@@ -328,9 +335,9 @@ public class King extends PlaceAttackingPiece {
 		return false;
 	}
 
-	public Attack addAttack(Place otherPlace) {
+	public Attack addAttack(Place otherPlace, PlaceAttackingPiece placeAttackingPiece) {
 
-		Attack attackingPlace = new Attack(this, otherPlace);
+		Attack attackingPlace = new Attack(this, otherPlace, placeAttackingPiece);
 
 		attackedPlaces.add(attackingPlace);
 
@@ -439,7 +446,7 @@ public class King extends PlaceAttackingPiece {
 
 			otherPlace.setRocade(rocade);
 
-			rocades.add(rocade);
+			// rocades.add(rocade);
 		}
 
 		return otherPlace;
@@ -458,7 +465,7 @@ public class King extends PlaceAttackingPiece {
 
 		boolean result = super.moveTo(placeTo, false, false);
 
-		prepareMovez();
+		// prepareMovez();
 
 		return result;
 	}
@@ -472,9 +479,10 @@ public class King extends PlaceAttackingPiece {
 			movez.add(new Move(currentPlace, place, this, "m"));
 		}
 
-		for (Rocade rocade : rocades) {
-
-			movez.add(rocade);
-		}
+		/*
+		 * for (Rocade rocade : rocades) {
+		 * 
+		 * movez.add(rocade); }
+		 */
 	}
 }

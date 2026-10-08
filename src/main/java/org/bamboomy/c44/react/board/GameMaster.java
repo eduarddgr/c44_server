@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.log4j.Logger;
 import org.bamboomy.c44.domain.ColorsTaken;
 import org.bamboomy.c44.react.board.gui.GuiMove;
 import org.bamboomy.c44.react.board.gui.GuiPlace;
@@ -33,6 +34,8 @@ import org.bamboomy.c44.react.board.pieces.King;
 import org.bamboomy.c44.react.board.pieces.LinePiece;
 import org.bamboomy.c44.react.board.pieces.Piece;
 import org.bamboomy.c44.react.board.pieces.PlaceAttackingPiece;
+import org.bamboomy.c44.react.jsp.Game;
+import org.bamboomy.c44.react.jsp.MetaJudge;
 import org.bamboomy.c44.react.player.Alliance;
 import org.bamboomy.c44.react.player.Color;
 import org.bamboomy.c44.react.player.Player;
@@ -46,8 +49,6 @@ import lombok.extern.slf4j.Slf4j;
 public class GameMaster {
 
 	private static final String DEFAULT_REMOTE_OUTPUT = "The Remote Bot\n\nis still...\n\nbeginning\n\nto\n\ncontemplate...";
-
-	private static final String DEFAULT_LOCAL_OUTPUT = "The Local Bot\n\nis still...\n\nbeginning\n\nto\n\ncontemplate...";
 
 	private static final String DEFAULT_OUTPUT = "No bot\n\nis poundering...";
 
@@ -81,9 +82,6 @@ public class GameMaster {
 	@Getter
 	private CountDownLatch latch;
 
-	@Getter
-	private CountDownLatch mateLatch = new CountDownLatch(1);
-
 	private int countDown = 6;
 
 	@Setter
@@ -105,15 +103,77 @@ public class GameMaster {
 	private ArrayList<Player> matedPlayers = new ArrayList<Player>();
 
 	@Getter
-	private boolean done = false;
+	@Setter
+	private int matedPlayersIndex = -1;
 
-	public GameMaster(String hash) {
+	@Getter
+	@Setter
+	private boolean done = false, finished = false;
+
+	@Getter
+	@Setter
+	private CountDownLatch nextMoveReadyLatch = new CountDownLatch(1);
+
+	@Getter
+	@Setter
+	private CountDownLatch filterLatch = new CountDownLatch(0);
+
+	private Game game = null;
+
+	@Getter
+	private String recordedPieceHash, recordedSquare;
+
+	@Getter
+	private int moveIndex = 0;
+
+	final static Logger logger = Logger.getLogger(GameMaster.class);
+
+	@Getter
+	private Judge judge = null;
+
+	@Setter
+	private boolean robotPlay = false;
+
+	@Setter
+	private boolean mate = false;
+
+	@Setter
+	@Getter
+	private String exception = null;
+
+	@Getter
+	@Setter
+	private String result = "";
+
+	@Setter
+	private MetaJudge metaJudge;
+
+	@Getter
+	@Setter
+	private boolean debug = false;
+
+	private boolean handelingKamikaze = false;
+
+	private CountDownLatch checkCountDownLatch = new CountDownLatch(0);
+
+	public GameMaster(String hash, boolean robotPlay) {
 
 		latch = new CountDownLatch(4);
 
 		this.hash = hash;
 
 		board = new Board(this);
+
+		this.robotPlay = robotPlay;
+
+		if (robotPlay && judge == null) {
+
+			judge = new Judge4Robots(this);
+
+		} else if (judge == null) {
+
+			judge = new Judge4Human(this);
+		}
 	}
 
 	public void init(Iterable<ColorsTaken> userIterable) {
@@ -187,7 +247,10 @@ public class GameMaster {
 			latch.countDown();
 		}
 
+		// if (!ColorController.robotPlay) {
+
 		currentPlayer = playerz[currentPlayerIndex];
+		// }
 
 		inited = true;
 	}
@@ -197,7 +260,25 @@ public class GameMaster {
 		return currentPlayer != null && userColor == currentPlayer.getColor();
 	}
 
-	public boolean movePiece(String pieceHash, String to, boolean fromBot, boolean fromRemoteBot) {
+	public synchronized boolean movePiece(String pieceHash, String to, boolean fromBot, boolean fromRemoteBot,
+			boolean switchPlayer) {
+
+		if (exception != null) {
+
+			return false;
+		}
+
+		checkCountDownLatch = new CountDownLatch(1);
+
+		if (currentPlayerIndex == 0) {
+
+			logger.debug("move: " + moveIndex++);
+		}
+
+		if (game != null) {
+
+			game.incrementMove();
+		}
 
 		Piece piece = currentPlayer.getPiece(pieceHash);
 
@@ -217,19 +298,20 @@ public class GameMaster {
 			return false;
 		}
 
-		boolean success = move.execute(true);
+		boolean success = false;
+
+		handelingKamikaze = currentPlayer.isKamikaze();
+
+		if (switchPlayer) {
+
+			success = move.execute(true);
+		}
 
 		log.debug("success " + success);
 
 		currentPlayer.setLastMove(move);
 
-		if (success) {
-
-			currentPlayer.getKing().prepareMovez();
-
-			currentPlayer.calculateKingLinez();
-
-			currentPlayer.getLastMove().getPiece().calculateMovez();
+		if (success && switchPlayer) {
 
 			previousPlayer = currentPlayer;
 
@@ -238,16 +320,28 @@ public class GameMaster {
 
 		if (move.getTakenPiece() instanceof King) {
 
-			currentPlayer.die();
+			move.getTakenPiece().getPlayer().die();
 
-			currentPlayer = getNextPlayer();
+			if (move.getTakenPiece().getPlayer() == currentPlayer) {
 
-			robotOutput = GOODBYE;
+				currentPlayer = getNextPlayer();
+
+				robotOutput = GOODBYE;
+			}
 		}
 
-		if (success) {
+		if (success && switchPlayer) {
 
 			handleNextTurn();
+		}
+
+		mate = false;
+
+		if (judge != null) {
+
+			judge.reset();
+
+			judge.checkForMate();
 		}
 
 		if (!robotOutput.contains("Legal move")) {
@@ -255,40 +349,54 @@ public class GameMaster {
 			robotOutput = DEFAULT_OUTPUT;
 		}
 
+		nextMoveReadyLatch.countDown();
+
+		nextMoveReadyLatch = new CountDownLatch(1);
+
+		checkCountDownLatch = new CountDownLatch(0);
+
 		return success;
 	}
 
-	private void calculateCurrentPlayerVanillaMovez() {
+	/*
+	 * private void calculateCurrentPlayerVanillaMovez() {
+	 * 
+	 * currentPlayer.getKing().prepareMovez();
+	 * 
+	 * calculateChecks(currentPlayer.getKing());
+	 * 
+	 * currentPlayer.getKing().calculateMovez();
+	 * 
+	 * currentPlayer.filterCheckMovez(currentPlayer.getKing(),
+	 * currentPlayer.getKing());
+	 * 
+	 * currentPlayer.getKing().prepareMovez();
+	 * 
+	 * currentPlayer.getKing().calculateMovez(); }
+	 */
 
-		currentPlayer.getKing().prepareMovez();
-
-		calculateChecks(currentPlayer.getKing());
-
-		currentPlayer.getKing().calculateMovez();
-
-		currentPlayer.filterCheckMovez(currentPlayer.getKing(), currentPlayer.getKing());
-	}
-
-	private void calculateCurrentPlayerMovez() {
-
-		if (!matedPlayers.isEmpty() && !matedPlayers.get(0).getAlliance().isInAlliance(currentPlayer.getColor())) {
-
-			currentPlayer.createFinishingMovez(matedPlayers.get(0));
-
-			if (currentPlayer.cannotMove()) {
-
-				calculateCurrentPlayerVanillaMovez();
-
-			} else {
-
-				robotOutput = FINISH_HIM.replace("_", "" + currentPlayer.getNumberOfMovez());
-			}
-
-		} else {
-
-			calculateCurrentPlayerVanillaMovez();
-		}
-	}
+	/*
+	 * private void calculateCurrentPlayerMovez() {
+	 * 
+	 * if (!matedPlayers.isEmpty() &&
+	 * !matedPlayers.get(matedPlayersIndex).getAlliance().isInAlliance(currentPlayer
+	 * .getColor())) {
+	 * 
+	 * currentPlayer.createFinishingMovez(matedPlayers.get(matedPlayersIndex));
+	 * 
+	 * if (currentPlayer.cannotMove()) {
+	 * 
+	 * calculateCurrentPlayerVanillaMovez();
+	 * 
+	 * } else {
+	 * 
+	 * robotOutput = FINISH_HIM.replace("_", "" + currentPlayer.getNumberOfMovez());
+	 * }
+	 * 
+	 * } else {
+	 * 
+	 * calculateCurrentPlayerVanillaMovez(); } }
+	 */
 
 	private void handleNextTurn() {
 
@@ -297,32 +405,65 @@ public class GameMaster {
 			return;
 		}
 
-		calculateCurrentPlayerMovez();
+		recalculateChecks();
 
-		boolean wasMate = currentPlayer.cannotMove();
+		currentPlayerIsMate();
 
-		if (!currentPlayer.isCheck() && currentPlayer.getAlliance() != null) {
+		// calculateCurrentPlayerMovez();
 
-			Player ally = playerz[currentPlayer.getAlliance().getOtherColor(currentPlayer.getColor()).getSeq()];
+		// boolean wasMate = currentPlayer.cannotMove();
 
-			ally.getKing().prepareMovez();
+		/*
+		 * if (!currentPlayer.isCheck() && currentPlayer.getAlliance() != null) {
+		 * 
+		 * Player ally =
+		 * playerz[currentPlayer.getAlliance().getOtherColor(currentPlayer.getColor()).
+		 * getSeq()];
+		 * 
+		 * ally.getKing().prepareMovez();
+		 * 
+		 * calculateChecks(ally.getKing());
+		 * 
+		 * ally.getKing().calculateMovez();
+		 * 
+		 * ally.filterCheckMovez(currentPlayer.getKing(), ally.getKing());
+		 * 
+		 * if (ally.cannotMove()) {
+		 * 
+		 * currentPlayer.filterCheckMovez(currentPlayer.getKing(), ally.getKing()); } }
+		 */
 
-			calculateChecks(ally.getKing());
+		/*
+		 * if (currentPlayer.cannotMove() && !wasMate) {
+		 * 
+		 * calculateCurrentPlayerMovez(); }
+		 */
+	}
 
-			ally.getKing().calculateMovez();
+	private void recalculateChecks() {
 
-			ally.filterCheckMovez(currentPlayer.getKing(), ally.getKing());
+		currentPlayer.getKing().prepareMovez();
 
-			if (ally.cannotMove()) {
+		Alliance otherAlliance = currentPlayer.getAlliance().getOtherAlliance();
 
-				currentPlayer.filterCheckMovez(currentPlayer.getKing(), ally.getKing());
-			}
-		}
+		Player one = playerz[otherAlliance.getOne().getSeq()];
 
-		if (currentPlayer.cannotMove() && !wasMate) {
+		one.getKing().prepareMovez();
+		one.calculateMovez();
+		one.calculateKingMovez();
 
-			calculateCurrentPlayerMovez();
-		}
+		Player two = playerz[otherAlliance.getTwo().getSeq()];
+
+		two.getKing().prepareMovez();
+		two.calculateMovez();
+		two.calculateKingMovez();
+
+		currentPlayer.calculateMovez();
+		currentPlayer.calculateKingMovez();
+
+		currentPlayer.filterCheckMovez(currentPlayer.getKing(), currentPlayer.getKing());
+
+		checkCountDownLatch.countDown();
 	}
 
 	private void executeRandomMove() {
@@ -399,15 +540,16 @@ public class GameMaster {
 
 		ArrayList<GuiMove> result = new ArrayList<>();
 
-		for (Player player : playerz) {
+		for (int i = 0; i < 4; i++) {
 
-			if (player.getLastMove() != null) {
+			if (getPlayerz()[(currentPlayerIndex + i) % 4].getLastMove() != null) {
 
-				result.add(player.getLastMove().toGuiColorMove(player.getColor()));
+				result.add(getPlayerz()[(currentPlayerIndex + i) % 4].getLastMove()
+						.toGuiColorMove(getPlayerz()[(currentPlayerIndex + i) % 4].getColor()));
 
 			} else {
 
-				result.add(new GuiMove(player.getColor()));
+				result.add(new GuiMove(getPlayerz()[(currentPlayerIndex + i) % 4].getColor()));
 			}
 		}
 
@@ -434,7 +576,7 @@ public class GameMaster {
 
 	public boolean isCurrentRemote(String playerHash) {
 
-		return (currentPlayer instanceof RemoteBot)
+		return (currentPlayer instanceof RemoteBot) && ((RemoteBot) currentPlayer).getPlayerHash() != null
 				&& ((RemoteBot) currentPlayer).getPlayerHash().equalsIgnoreCase(playerHash);
 	}
 
@@ -447,7 +589,26 @@ public class GameMaster {
 			color = currentPlayer.getColor().getName();
 		}
 
-		return board.getGuiArray(color, true);
+		/*
+		 * if (!currentPlayer.isKamikaze()) {
+		 * 
+		 * calculateCurrentPlayerMovez(); }
+		 */
+
+		GuiPlace[][] result = null;
+
+		if (debug) {
+
+			result = board.getGuiArray(color, true, recordedPieceHash, recordedSquare);
+
+		} else {
+
+			result = board.getGuiArray(color, true, null, null);
+		}
+
+		recordedPieceHash = null;
+
+		return result;
 	}
 
 	public void resetRemoteOutput() {
@@ -456,18 +617,6 @@ public class GameMaster {
 	}
 
 	public void setBoard(String boardJson) {
-
-		/*
-		 * for (Player player : playerz) {
-		 * 
-		 * for (Piece piece : player.getPiecez()) {
-		 * 
-		 * if (piece instanceof LinePiece) {
-		 * 
-		 * ((LinePiece) piece).cleanKingeLinez(); } } }
-		 * 
-		 * 
-		 */
 
 		for (Player player : playerz) {
 
@@ -492,9 +641,7 @@ public class GameMaster {
 			}
 		}
 
-		for (
-
-		Place[] row : board.getPlacez()) {
+		for (Place[] row : board.getPlacez()) {
 
 			for (Place place : row) {
 
@@ -550,17 +697,55 @@ public class GameMaster {
 		}
 	}
 
-	private void calculateChecks(King king) {
+	/*
+	 * private void calculateChecks(King king) {
+	 * 
+	 * getPlayerz()[king.getPlayer().getAlliance().getOtherAlliance().getOne().
+	 * getSeq()].calculateMovez();
+	 * getPlayerz()[king.getPlayer().getAlliance().getOtherAlliance().getTwo().
+	 * getSeq()].calculateMovez(); }
+	 */
 
-		getPlayerz()[king.getPlayer().getAlliance().getOtherAlliance().getOne().getSeq()].calculateMovez();
-		getPlayerz()[king.getPlayer().getAlliance().getOtherAlliance().getTwo().getSeq()].calculateMovez();
-	}
+	public synchronized boolean currentPlayerIsMate() {
 
-	public boolean currentPlayerIsMate() {
+		if (finished || handelingKamikaze) {
+
+			return false;
+		}
+
+		if (mate) {
+
+			return true;
+		}
+
+		if (currentPlayer == null) {
+
+			return false;
+		}
+
+		try {
+
+			Thread.sleep(1000);
+
+			checkCountDownLatch.await();
+
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		if (currentPlayer != null && currentPlayer.cannotMove()) {
 
-			if (matedPlayers.size() == 0) {
+			mate = true;
+
+			if (!matedPlayers.contains(currentPlayer)) {
+
+				matedPlayers.add(currentPlayer);
+
+				matedPlayersIndex++;
+			}
+
+			if (!sameAllianceMatedPlayers()) {
 
 				robotOutput = MATE_OUTPUT;
 
@@ -577,9 +762,29 @@ public class GameMaster {
 		return false;
 	}
 
-	public void setTurn(String turn) {
+	private boolean sameAllianceMatedPlayers() {
 
-		mateLatch = new CountDownLatch(1);
+		if (matedPlayers.size() <= 1) {
+
+			return false;
+		}
+
+		for (Player matedPlayer : matedPlayers) {
+
+			for (Player otherMatedPlayer : matedPlayers) {
+
+				if (matedPlayer != otherMatedPlayer
+						&& matedPlayer.getAlliance().isInAlliance(otherMatedPlayer.getColor())) {
+
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public void setTurn(String turn) {
 
 		board.setDirty(false);
 
@@ -589,9 +794,12 @@ public class GameMaster {
 
 		handleNextTurn();
 
-		mateLatch.countDown();
-
 		System.out.println("Turn set to: " + turn);
+
+		if (judge != null) {
+
+			judge.checkForMate();
+		}
 	}
 
 	public void kamikaze() {
@@ -603,11 +811,6 @@ public class GameMaster {
 		currentPlayer.calculateMovez();
 
 		currentPlayer.setKamikaze(true);
-
-		if (!matedPlayers.contains(currentPlayer)) {
-
-			matedPlayers.add(currentPlayer);
-		}
 	}
 
 	public Player getPlayerWithColor(Color color) {
@@ -621,5 +824,41 @@ public class GameMaster {
 		}
 
 		return null;
+	}
+
+	public void setRecordedMove(String pieceHash, String square) {
+
+		recordedPieceHash = pieceHash;
+		recordedSquare = square;
+	}
+
+	public void refresh() {
+
+		nextMoveReadyLatch.countDown();
+		nextMoveReadyLatch = new CountDownLatch(1);
+	}
+
+	public boolean sameAllianceMatedAndCurrentPlayer() {
+
+		for (Player matedPlayer : matedPlayers) {
+
+			if (matedPlayer != currentPlayer && matedPlayer.getAlliance().isInAlliance(currentPlayer.getColor())) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public void setGame(Game game) {
+
+		this.game = game;
+
+		if (judge instanceof Judge4Robots) {
+
+			((Judge4Robots) judge).setGame(game);
+			((Judge4Robots) judge).setMetaJudge(metaJudge);
+		}
 	}
 }

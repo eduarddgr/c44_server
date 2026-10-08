@@ -105,6 +105,11 @@ public abstract class LinePiece extends Piece {
 
 			Place otherPlace = currentPlace.getGameMaster().getBoard().getPlacez()[i][currentPlace.getY() - counter];
 
+			if (otherPlace == null) {
+
+				break;
+			}
+
 			if (handleOtherPlaceNE(otherPlace)) {
 
 				break;
@@ -123,6 +128,11 @@ public abstract class LinePiece extends Piece {
 			}
 
 			Place otherPlace = currentPlace.getGameMaster().getBoard().getPlacez()[currentPlace.getX() + counter][i];
+			
+			if (otherPlace == null) {
+
+				break;
+			}
 
 			if (handleOtherPlaceNE(otherPlace)) {
 
@@ -142,6 +152,11 @@ public abstract class LinePiece extends Piece {
 			}
 
 			Place otherPlace = currentPlace.getGameMaster().getBoard().getPlacez()[i][currentPlace.getY() + counter];
+			
+			if (otherPlace == null) {
+
+				break;
+			}
 
 			if (handleOtherPlaceNE(otherPlace)) {
 
@@ -161,6 +176,11 @@ public abstract class LinePiece extends Piece {
 			}
 
 			Place otherPlace = currentPlace.getGameMaster().getBoard().getPlacez()[currentPlace.getX() - counter][i];
+			
+			if (otherPlace == null) {
+
+				break;
+			}
 
 			if (handleOtherPlaceNE(otherPlace)) {
 

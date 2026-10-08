@@ -96,8 +96,6 @@ public abstract class Piece {
 		this.value = value;
 
 		moved.push(false);
-
-		// Stack<Boolean> copy = (Stack<Boolean>) moved.clone();
 	}
 
 	public Piece(Place place, int color, Player player, String identifier, PieceValue value, boolean removed) {
@@ -198,20 +196,11 @@ public abstract class Piece {
 				movez.add(new Move(currentPlace, otherPlace, this, "m"));
 			}
 
-			// }
-
-			/*
-			 * if (!isPinnable()) { //player.kingAttack(otherPlace); }
-			 * 
-			 */
-
 			return true;
 
 		} else if (otherPlace != null) {
 
 			movez.add(new Move(currentPlace, otherPlace, this, "m"));
-
-			// player.kingAttack(otherPlace);
 		}
 
 		return false;
@@ -258,10 +247,16 @@ public abstract class Piece {
 				log.debug("not check");
 
 				legalMovez.add(move);
+				
+			} else {
+				
+				log.debug("check...");
 			}
 
 			move.rollback();
 		}
+		
+		recalculateChecks(firstKing, secondKing);
 
 		movez = legalMovez;
 	}

@@ -30,6 +30,7 @@ import org.bamboomy.c44.react.board.pieces.Pawn;
 import org.bamboomy.c44.react.board.pieces.Piece;
 import org.bamboomy.c44.react.board.pieces.Queen;
 import org.bamboomy.c44.react.board.pieces.Tower;
+import org.bamboomy.c44.react.player.Alliance;
 import org.bamboomy.c44.react.player.Color;
 import org.bamboomy.c44.react.player.Player;
 import org.json.JSONObject;
@@ -81,9 +82,9 @@ public class Place {
 		md5 = Md5.md5(time);
 	}
 
-	public GuiPlace toGuiPlace(String color, boolean currentPlayer) {
+	public GuiPlace toGuiPlace(String color, boolean currentPlayer, String recordedPieceHash, String recordedSquare) {
 
-		return new GuiPlace(piece, color, currentPlayer, x, y);
+		return new GuiPlace(piece, color, currentPlayer, x, y, recordedPieceHash, recordedSquare);
 	}
 
 	public GuiPlace toGuiPlace(boolean showMd5) {
@@ -177,6 +178,11 @@ public class Place {
 			if (!gameMaster.getMatedPlayers().contains(gameMaster.getPlayerz()[oldColor])) {
 
 				gameMaster.getMatedPlayers().add(gameMaster.getPlayerz()[oldColor]);
+
+				gameMaster.setMatedPlayersIndex(gameMaster.getMatedPlayersIndex() + 1);
+
+				gameMaster.getJudge().addMatedPlayer(gameMaster.getPlayerz()[oldColor]);
+				gameMaster.getJudge().addResultToGame();
 			}
 
 			dead = true;
@@ -303,11 +309,13 @@ public class Place {
 		piece = null;
 	}
 
-	public boolean isAttackedForKingByKingline(Color color) {
+	public boolean isAttackedForKingByKingline(Alliance alliance) {
 
 		for (LinePieceLine kingLine : getKingLinez()) {
 
-			if (!kingLine.getPiece().isRemoved() && !kingLine.getPiece().getPlayer().getAlliance().isInAlliance((color))
+			if (kingLine != null && !kingLine.getPiece().isRemoved()
+					&& (kingLine.getPiece().getPlayer().getColor() == alliance.getOne()
+							|| kingLine.getPiece().getPlayer().getColor() == alliance.getTwo())
 					&& (kingLine.getPossibleKingLineList().size() == 0 || kingLine.isAttacking((King) piece))) {
 
 				return true;

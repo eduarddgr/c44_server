@@ -36,13 +36,13 @@ public class GuiPlace {
     }
 
     public GuiPlace(Piece piece, String color,
-                    boolean currentPlayer, int x, int y) {
+                    boolean currentPlayer, int x, int y, String recordedPieceHash, String recordedSquare) {
 
         this(x, y);
 
         if (piece != null) {
 
-            guiPiece = new GuiPiece(piece, color, currentPlayer);
+            guiPiece = new GuiPiece(piece, color, currentPlayer, recordedPieceHash, recordedSquare);
         }
     }
 

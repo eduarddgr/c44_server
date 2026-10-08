@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>c44</groupId>
 	<artifactId>c44_server</artifactId>
-	<version>0.-2.-12</version>
+	<version>0.-5.-11</version>
 	<name>org.bamboomy.c44</name>
 	<packaging>war</packaging>
 
@@ -78,6 +78,30 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>jakarta.servlet.jsp.jstl</groupId>
+			<artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+			<version>3.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.web</groupId>
+			<artifactId>jakarta.servlet.jsp.jstl</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>
@@ -97,6 +121,18 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<sourceFileIncludes>
+						<include>ColorController.java</include>
+						<include>ReactController.java</include>
+					</sourceFileIncludes>
+					<subpackages>org/bamboomy/c44/rest</subpackages>
+					<show>public</show>
 				</configuration>
 			</plugin>
 		</plugins>

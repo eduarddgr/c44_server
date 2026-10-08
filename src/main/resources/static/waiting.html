@@ -60,41 +60,37 @@ function showYours(){
 }
 
 $( document ).ready(function() {
-    if(window.location.href.split("=")[1] === "yoo") {
+	if(window.location.href.split("=")[1] === "yo") {
 
-        $("#title").html("You and our bot against our bots it is...");
-
-        showOur();
-
-        } else if(window.location.href.split("=")[1] === "yyo") {
-
-        $("#title").html("You and your bot against our bots it is...");
+        $("#title").html("Bots against bots it is...");
 
                 showOur();
         showYours();
 
-        } else if(window.location.href.split("=")[1] === "yoy") {
+		} else if(window.location.href.split("=")[1] === "yyy") {
 
-        $("#title").html("You and our bot against your bots it is...");
+		$("#title").html("You and a bot against other bots it is...");
 
-                showOur();
-        showYours();
-
-        } else if(window.location.href.split("=")[1] === "yo") {
-
-        $("#title").html("Your bots against our bots it is...");
-
-                showOur();
-        showYours();
+		showYours();
 
         }
 });
 
 function checkBoogy(){
 
-  if(ourBotOnline && yourBotOnline) {
+  if((ourBotOnline && yourBotOnline) || (yourBotOnline && window.location.href.split("=")[1] === "yyy")){
 
     $("#boogy").show( "slow", function() {});
+	
+	if(window.location.href.split("=")[1] === "yyy"){
+			
+			window.location.assign("/portal/viewBooks");
+		}
+	
+	if((window.location.href.split("=")[1] === "yo")){
+		
+		window.location.assign("/book/viewBooks");
+	}
   }
 }
 
@@ -125,7 +121,7 @@ function checkYourBotOnline(){
 
       if(data === "online"){
 
-        $("#your").html("Your bot is online :)<br/><br/>");
+        $("#your").html("The bot is online :)<br/><br/>");
 
         yourBotOnline = true;
 

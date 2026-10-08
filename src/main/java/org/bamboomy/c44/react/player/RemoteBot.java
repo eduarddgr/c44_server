@@ -41,7 +41,7 @@ public class RemoteBot extends Player {
 	@Setter
 	@Getter
 	private boolean registered = false;
-	
+
 	@Setter
 	@Getter
 	private String playerHash;
@@ -59,16 +59,17 @@ public class RemoteBot extends Player {
 
 		log.debug("Going to move: my color is: " + getColor().getName());
 
-		calculateMovez();
-
-		calculateKingMovez();
-
-		movez = new ArrayList<>();
-
-		for (Piece piece : piecez) {
-
-			movez.addAll(piece.getMovez());
-		}
+		/*
+		 * calculateMovez();
+		 * 
+		 * calculateKingMovez();
+		 * 
+		 * movez = new ArrayList<>();
+		 * 
+		 * for (Piece piece : piecez) {
+		 * 
+		 * movez.addAll(piece.getMovez()); }
+		 */
 	}
 
 }

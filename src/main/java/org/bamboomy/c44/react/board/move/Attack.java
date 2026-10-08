@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bamboomy.c44.react.board.Place;
 import org.bamboomy.c44.react.board.pieces.King;
+import org.bamboomy.c44.react.board.pieces.Piece;
 
 @AllArgsConstructor
 public class Attack {
@@ -29,6 +30,9 @@ public class Attack {
 
     @Getter
     private Place place;
+    
+    @Getter
+    private Piece piece;
 
     public void destroy(){
 
